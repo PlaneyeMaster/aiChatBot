@@ -57,3 +57,11 @@ def get_scenario_by_id(scenario_id: str):
 def get_character_by_id(character_id: str):
     res = _supabase.table("characters").select("*").eq("id", character_id).limit(1).execute()
     return res.data[0] if res.data else None
+
+def get_session_by_id(session_id: str):
+    res = _supabase.table("sessions").select("*").eq("id", session_id).limit(1).execute()
+    return res.data[0] if res.data else None
+
+def get_user_by_id(user_id: str):
+    res = _supabase.table("users").select("*").eq("id", user_id).limit(1).execute()
+    return res.data[0] if res.data else None
