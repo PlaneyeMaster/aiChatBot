@@ -24,6 +24,7 @@ def sse(data: dict) -> str:
 
 @router.post("/stream")
 async def chat_stream(req: ChatStreamRequest):
+    # (앞부분 Supabase 데이터 로드 로직은 동일)
     sess = get_session_by_id(req.session_id)
     if not sess:
         raise HTTPException(status_code=404, detail="Session not found")
@@ -47,27 +48,29 @@ async def chat_stream(req: ChatStreamRequest):
     model = model_name()
 
     async def event_generator():
-        # 1) 시작 이벤트(프론트에서 로딩 표시 용)
         yield sse({"type": "meta", "event": "start", "model": model})
 
         try:
-            stream = client.responses.stream(
+            # client.chat.completions.create를 사용하고 stream=True를 설정해야 합니다
+            response = await client.chat.completions.create(
                 model=model,
-                input=[
+                messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": req.text},
                 ],
+                stream=True, # 스트리밍 활성화
             )
 
-            async with stream:
-                async for event in stream:
-                    if event.type == "response.output_text.delta":
-                        yield sse({"type": "delta", "text": event.delta})
-                    elif event.type == "response.output_text":
-                        yield sse({"type": "delta", "text": getattr(event, "text", "")})
-                    elif event.type == "response.completed":
-                        yield sse({"type": "meta", "event": "done"})
+            # 비동기 반복문을 통해 스트림 데이터를 처리합니다
+            async for chunk in response:
+                if chunk.choices and chunk.choices[0].delta.content:
+                    delta_text = chunk.choices[0].delta.content
+                    yield sse({"type": "delta", "text": delta_text})
+            
+            yield sse({"type": "meta", "event": "done"})
+
         except Exception as e:
+            # 에러 발생 시 SSE 형식으로 에러 메시지 전송
             yield sse({"type": "error", "message": str(e)})
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
