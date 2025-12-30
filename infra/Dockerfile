@@ -13,7 +13,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-ENV PYTHONPATH=/app
-# Render에서 제공하는 PORT 환경변수를 사용합니다.
-# bash -lc 대신 더 직관적인 쉘 실행 방식을 사용합니다.
-CMD uvicorn apps.gateway_api.main:app --host 0.0.0.0 --port $PORT
+# 기존 /app에 현재 디렉토리(.)를 추가하여 경로를 더 명확히 합니다.
+ENV PYTHONPATH="/app:/app/apps:${PYTHONPATH}"
+
+# CMD에서 uvicorn 실행 시 현재 경로를 다시 한번 확인
+CMD ["sh", "-c", "uvicorn apps.gateway_api.main:app --host 0.0.0.0 --port $PORT"]
