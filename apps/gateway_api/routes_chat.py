@@ -51,7 +51,7 @@ async def chat_stream(req: ChatStreamRequest):
         yield sse({"type": "meta", "event": "start", "model": model})
 
         try:
-            stream = await client.responses.stream(
+            stream = client.responses.stream(
                 model=model,
                 input=[
                     {"role": "system", "content": system_prompt},
@@ -61,9 +61,10 @@ async def chat_stream(req: ChatStreamRequest):
 
             async with stream:
                 async for event in stream:
-                    # 텍스트 델타만 골라서 내려주기
                     if event.type == "response.output_text.delta":
                         yield sse({"type": "delta", "text": event.delta})
+                    elif event.type == "response.output_text":
+                        yield sse({"type": "delta", "text": getattr(event, "text", "")})
                     elif event.type == "response.completed":
                         yield sse({"type": "meta", "event": "done"})
         except Exception as e:
