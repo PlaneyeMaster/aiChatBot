@@ -4,11 +4,15 @@ from fastapi.responses import JSONResponse
 from repos.supabase_repo import supabase_client
 from apps.gateway_api.routes_catalog import router as catalog_router
 from apps.gateway_api.routes_seed import router as seed_router
+from apps.gateway_api.routes_session import router as session_router
+
 
 app = FastAPI(title="AI Human Gateway API")
 
 app.include_router(catalog_router)
 app.include_router(seed_router)
+app.include_router(session_router)
+
 
 @app.get("/health")
 def health():
