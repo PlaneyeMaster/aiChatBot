@@ -1,4 +1,6 @@
-from fastapi import APIRouter, HTTPException, Query
+import logging
+import os
+from fastapi import APIRouter, HTTPException, Query, Header, Depends
 from pydantic import BaseModel
 from repos.supabase_repo import (
     get_user_by_id,
@@ -11,7 +13,16 @@ from repos.supabase_repo import (
 )
 from repos.pinecone_repo import delete_memory_vectors
 
-router = APIRouter(prefix="/admin", tags=["admin"])
+_logger = logging.getLogger(__name__)
+
+def require_admin_key(x_admin_key: str | None = Header(default=None, alias="X-Admin-Key")):
+    expected = os.getenv("ADMIN_API_KEY")
+    if not expected:
+        raise HTTPException(status_code=500, detail="ADMIN_API_KEY not set")
+    if x_admin_key != expected:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+router = APIRouter(prefix="/admin", tags=["admin"], dependencies=[Depends(require_admin_key)])
 
 class UpsertUserBody(BaseModel):
     id: str
@@ -65,7 +76,10 @@ def admin_delete_memory(memory_id: str):
 
     # 1) Pinecone delete (정석)
     if pinecone_vector_id:
-        delete_memory_vectors(user_id=user_id, vector_ids=[pinecone_vector_id])
+        try:
+            delete_memory_vectors(user_id=user_id, vector_ids=[pinecone_vector_id])
+        except Exception:
+            _logger.exception("admin_memory_delete_pinecone_failed", extra={"memory_id": memory_id})
 
     # 2) Supabase delete
     delete_memory_item_by_id(memory_id)

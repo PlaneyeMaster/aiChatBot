@@ -102,7 +102,11 @@ MAX_SAVE_PER_TURN = 5
 async def write_personal_memory(user_id: str, session_id: str, user_text: str, assistant_text: str):
     cands = await extract_memory_candidates(user_text, assistant_text)
     if not cands:
+        if os.getenv("MEMORY_DEBUG") == "1":
+            print(f"memory_write_context user_id={user_id} session_id={session_id} cands=0", flush=True)
         return {"saved": 0, "skipped_duplicate": 0}
+    if os.getenv("MEMORY_DEBUG") == "1":
+        print(f"memory_write_context user_id={user_id} session_id={session_id} cands={len(cands)}", flush=True)
 
     recent_texts = list_recent_memory_texts(user_id=user_id, limit=50)
 

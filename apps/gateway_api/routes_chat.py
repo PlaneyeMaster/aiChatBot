@@ -1,4 +1,5 @@
 import json
+import logging
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -16,6 +17,7 @@ from services.rag_personal import retrieve_personal_memory
 from services.memory_writer import write_personal_memory
 
 router = APIRouter(prefix="/chat", tags=["chat"])
+_logger = logging.getLogger(__name__)
 
 class ChatStreamRequest(BaseModel):
     session_id: str
@@ -61,7 +63,7 @@ async def chat_stream(req: ChatStreamRequest):
         try:
             insert_message(session_id=req.session_id, user_id=sess.get("user_id"), role="user", content=req.text)
         except Exception:
-            pass  # MVP: 저장 실패가 스트리밍을 막지 않게
+            _logger.exception("chat_insert_message_failed", extra={"session_id": req.session_id, "role": "user"})
 
         assistant_full = ""
 
@@ -85,7 +87,7 @@ async def chat_stream(req: ChatStreamRequest):
             try:
                 insert_message(session_id=req.session_id, user_id=sess.get("user_id"), role="assistant", content=assistant_full)
             except Exception:
-                pass
+                _logger.exception("chat_insert_message_failed", extra={"session_id": req.session_id, "role": "assistant"})
 
             # 4) 개인 메모리 추출+저장 (user_id 없으면 스킵)
             if sess.get("user_id"):
@@ -100,11 +102,13 @@ async def chat_stream(req: ChatStreamRequest):
                     yield sse({"type": "meta", "event": "memory_skipped_duplicate", "count": result.get("skipped_duplicate", 0)})
                 except Exception:
                     # 메모리 실패도 스트림을 망치지 않음
+                    _logger.exception("chat_memory_save_failed", extra={"session_id": req.session_id})
                     yield sse({"type": "meta", "event": "memory_saved", "count": 0})
 
             yield sse({"type": "meta", "event": "done"})
 
         except Exception as e:
+            _logger.exception("chat_stream_failed", extra={"session_id": req.session_id})
             yield sse({"type": "error", "message": str(e)})
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
