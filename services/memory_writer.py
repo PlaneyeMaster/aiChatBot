@@ -80,12 +80,13 @@ MAX_SAVE_PER_TURN = 5
 async def write_personal_memory(user_id: str, session_id: str, user_text: str, assistant_text: str):
     cands = await extract_memory_candidates(user_text, assistant_text)
     if not cands:
-        return {"saved": 0}
+        return {"saved": 0, "skipped_duplicate": 0}
 
     recent_texts = list_recent_memory_texts(user_id=user_id, limit=50)
 
     vectors = []
     saved = 0
+    skipped_dup = 0
 
     for it in cands:
         txt = (it.get("text") or "").strip()
@@ -100,6 +101,7 @@ async def write_personal_memory(user_id: str, session_id: str, user_text: str, a
 
         # 2) 텍스트 중복
         if is_text_duplicate(txt, recent_texts):
+            skipped_dup += 1
             continue
 
         # 3) 임베딩 생성
@@ -108,6 +110,7 @@ async def write_personal_memory(user_id: str, session_id: str, user_text: str, a
         # 4) 벡터 유사도 중복 (top1 score로 판단)
         res = query_memory(user_id=user_id, vector=emb, top_k=1)
         if is_vector_duplicate(res, score_threshold=0.90):
+            skipped_dup += 1
             continue
 
         # 5) 저장
@@ -127,4 +130,4 @@ async def write_personal_memory(user_id: str, session_id: str, user_text: str, a
     if saved > 0:
         upsert_memory(user_id=user_id, items=vectors)
 
-    return {"saved": saved}
+    return {"saved": saved, "skipped_duplicate": skipped_dup}

@@ -97,6 +97,7 @@ async def chat_stream(req: ChatStreamRequest):
                         assistant_text=assistant_full,
                     )
                     yield sse({"type": "meta", "event": "memory_saved", "count": result.get("saved", 0)})
+                    yield sse({"type": "meta", "event": "memory_skipped_duplicate", "count": result.get("skipped_duplicate", 0)})
                 except Exception:
                     # 메모리 실패도 스트림을 망치지 않음
                     yield sse({"type": "meta", "event": "memory_saved", "count": 0})
