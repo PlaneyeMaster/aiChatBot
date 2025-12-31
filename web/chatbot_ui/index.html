@@ -1,0 +1,399 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>AI Chatbot MVP</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif; margin: 0; background: #0b0f14; color: #e6edf3; }
+    header { padding: 16px 20px; border-bottom: 1px solid #1f2937; display: flex; gap: 12px; align-items: center; }
+    header h1 { font-size: 16px; margin: 0; font-weight: 700; }
+    .container { display: grid; grid-template-columns: 360px 1fr; gap: 16px; padding: 16px; }
+    .card { background: #0f1620; border: 1px solid #1f2937; border-radius: 12px; padding: 14px; }
+    .card h2 { margin: 0 0 10px; font-size: 14px; }
+    label { display:block; font-size: 12px; color: #9fb0c0; margin: 10px 0 6px; }
+    input, select, button, textarea { width: 100%; box-sizing: border-box; }
+    input, select, textarea { background: #0b1220; border: 1px solid #243244; color: #e6edf3; border-radius: 10px; padding: 10px 12px; outline: none; }
+    button { background: #2563eb; border: 0; border-radius: 10px; padding: 10px 12px; color: white; font-weight: 700; cursor: pointer; }
+    button.secondary { background: #1f2937; }
+    button.danger { background: #b91c1c; }
+    button:disabled { opacity: 0.45; cursor: not-allowed; }
+    .row { display:flex; gap: 10px; }
+    .row > * { flex: 1; }
+    .muted { color: #9fb0c0; font-size: 12px; }
+    .pill { display: inline-block; padding: 4px 8px; border: 1px solid #243244; border-radius: 999px; font-size: 12px; color: #9fb0c0; }
+    .chat { height: calc(100vh - 120px); display:flex; flex-direction: column; }
+    .chatlog { flex: 1; overflow: auto; padding: 14px; background: #0b1220; border: 1px solid #243244; border-radius: 12px; }
+    .msg { margin: 10px 0; line-height: 1.5; white-space: pre-wrap; }
+    .msg .meta { font-size: 12px; color: #9fb0c0; margin-bottom: 4px; }
+    .msg.user { color: #e6edf3; }
+    .msg.assistant { color: #dbeafe; }
+    .composer { display:flex; gap: 10px; margin-top: 12px; }
+    .composer textarea { height: 70px; resize: none; }
+    .composer .buttons { width: 160px; display:flex; flex-direction: column; gap: 10px; }
+    .status { margin-top: 10px; display:flex; justify-content: space-between; gap: 10px; }
+    .kv { display:flex; gap: 10px; align-items:center; }
+    code { background: #111827; padding: 2px 6px; border-radius: 6px; border: 1px solid #1f2937; }
+    a { color: #93c5fd; }
+  </style>
+</head>
+<body>
+<header>
+  <h1>AI Chatbot MVP</h1>
+  <span class="pill" id="envPill">API: (loading)</span>
+  <span class="pill" id="sessionPill">Session: -</span>
+</header>
+
+<div class="container">
+  <!-- Left panel -->
+  <div class="card">
+    <h2>세션 설정</h2>
+
+    <label>Backend API Base</label>
+    <input id="apiBase" />
+
+    <div class="row">
+      <div>
+        <label>User ID</label>
+        <input id="userId" placeholder="예: user_001" value="user_001" />
+      </div>
+      <div>
+        <label>Age Band (옵션)</label>
+        <select id="ageBand">
+          <option value="">(미지정)</option>
+          <option value="10s">10대</option>
+          <option value="20s">20대</option>
+          <option value="30s">30대</option>
+          <option value="40s">40대</option>
+          <option value="50s">50대</option>
+          <option value="60s+">60대+</option>
+        </select>
+      </div>
+    </div>
+
+    <label>Character</label>
+    <select id="characterSelect"></select>
+
+    <label>Scenario</label>
+    <select id="scenarioSelect"></select>
+
+    <div class="row" style="margin-top: 12px;">
+      <button id="btnReload" class="secondary">캐릭터/시나리오 새로고침</button>
+      <button id="btnCreateSession">세션 생성</button>
+    </div>
+
+    <div class="row" style="margin-top: 10px;">
+      <button id="btnFetchMessages" class="secondary" disabled>세션 로그 조회</button>
+      <button id="btnReset" class="danger">리셋</button>
+    </div>
+
+    <div class="status">
+      <div class="kv">
+        <span class="muted">Status:</span>
+        <span id="statusText" class="muted">idle</span>
+      </div>
+      <div class="kv">
+        <span class="muted">Memory Saved:</span>
+        <span id="memorySaved" class="muted">0</span>
+      </div>
+    </div>
+
+    <p class="muted" style="margin-top: 12px;">
+      - 스트리밍: <code>POST /chat/stream</code><br/>
+      - 로그: <code>GET /session/{id}/messages</code>
+    </p>
+  </div>
+
+  <!-- Right panel -->
+  <div class="card chat">
+    <h2>채팅</h2>
+    <div id="chatlog" class="chatlog"></div>
+
+    <div class="composer">
+      <textarea id="inputText" placeholder="메시지를 입력하세요..."></textarea>
+      <div class="buttons">
+        <button id="btnSend" disabled>전송</button>
+        <button id="btnStop" class="secondary" disabled>중지</button>
+      </div>
+    </div>
+
+    <p class="muted" style="margin-top: 10px;">
+      팁: 우선 <b>세션 생성</b> 후 전송하세요.
+    </p>
+  </div>
+</div>
+
+<script>
+  // ====== Config ======
+  const DEFAULT_API_BASE = "https://aichatbot-ez4g.onrender.com"; // <-- 필요하면 변경
+  const $ = (id) => document.getElementById(id);
+
+  // ====== State ======
+  let sessionId = null;
+  let abortController = null;
+
+  // ====== Helpers ======
+  function setStatus(msg) { $("statusText").textContent = msg; }
+  function setEnvPill(apiBase) { $("envPill").textContent = "API: " + apiBase; }
+  function setSessionPill(id) { $("sessionPill").textContent = "Session: " + (id || "-"); }
+
+  function appendMsg(role, text) {
+    const el = document.createElement("div");
+    el.className = "msg " + role;
+
+    const meta = document.createElement("div");
+    meta.className = "meta";
+    meta.textContent = role === "user" ? "USER" : "ASSISTANT";
+    el.appendChild(meta);
+
+    const body = document.createElement("div");
+    body.textContent = text;
+    el.appendChild(body);
+
+    $("chatlog").appendChild(el);
+    $("chatlog").scrollTop = $("chatlog").scrollHeight;
+
+    return body; // assistant streaming에 활용 가능
+  }
+
+  function clearChat() { $("chatlog").innerHTML = ""; }
+
+  async function apiFetch(path, opts = {}) {
+    const base = $("apiBase").value.trim();
+    const url = base + path;
+    const res = await fetch(url, opts);
+    if (!res.ok) {
+      const t = await res.text().catch(() => "");
+      throw new Error(`HTTP ${res.status} ${res.statusText} :: ${t}`);
+    }
+    return res;
+  }
+
+  // ====== Catalog ======
+  async function loadCatalog() {
+    setStatus("loading catalog...");
+    const [cRes, sRes] = await Promise.all([
+      apiFetch("/catalog/characters"),
+      apiFetch("/catalog/scenarios"),
+    ]);
+
+    const cJson = await cRes.json();
+    const sJson = await sRes.json();
+
+    const cSel = $("characterSelect");
+    const sSel = $("scenarioSelect");
+    cSel.innerHTML = "";
+    sSel.innerHTML = "";
+
+    (cJson.items || []).forEach((c) => {
+      const opt = document.createElement("option");
+      opt.value = c.id;
+      opt.textContent = `${c.name} (${c.id})`;
+      cSel.appendChild(opt);
+    });
+
+    (sJson.items || []).forEach((s) => {
+      const opt = document.createElement("option");
+      opt.value = s.id;
+      opt.textContent = `${s.name} (${s.id})`;
+      sSel.appendChild(opt);
+    });
+
+    setStatus("catalog loaded");
+  }
+
+  // ====== Session ======
+  async function createSession() {
+    const userId = $("userId").value.trim();
+    const characterId = $("characterSelect").value;
+    const scenarioId = $("scenarioSelect").value;
+
+    if (!userId) { alert("user_id를 입력하세요."); return; }
+    if (!characterId || !scenarioId) { alert("캐릭터/시나리오를 선택하세요."); return; }
+
+    // (옵션) age_band를 서버에 저장하고 싶다면, 별도 profile API를 만들었을 때 여기서 호출하면 됩니다.
+    // 현재는 세션 생성에 영향 없도록 단순 보관만 합니다.
+
+    setStatus("creating session...");
+    const res = await apiFetch("/session/create", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ user_id: userId, character_id: characterId, scenario_id: scenarioId }),
+    });
+
+    const json = await res.json();
+    sessionId = json.session?.id || null;
+    setSessionPill(sessionId);
+
+    $("btnSend").disabled = !sessionId;
+    $("btnFetchMessages").disabled = !sessionId;
+
+    setStatus("session active");
+    // 시나리오 첫 메시지를 표시(옵션)
+    if (json.scenario?.first_message) {
+      appendMsg("assistant", json.scenario.first_message);
+    }
+  }
+
+  function resetAll() {
+    if (abortController) abortController.abort();
+    abortController = null;
+    sessionId = null;
+    setSessionPill(null);
+    $("btnSend").disabled = true;
+    $("btnStop").disabled = true;
+    $("btnFetchMessages").disabled = true;
+    $("memorySaved").textContent = "0";
+    clearChat();
+    setStatus("reset");
+  }
+
+  // ====== SSE via fetch(stream) ======
+  async function postSSE(path, bodyObj, onEvent) {
+    abortController = new AbortController();
+    const res = await apiFetch(path, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "text/event-stream",
+      },
+      body: JSON.stringify(bodyObj),
+      signal: abortController.signal,
+    });
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder("utf-8");
+    let buffer = "";
+
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+
+      // SSE는 이벤트가 "\n\n"로 구분됨
+      let parts = buffer.split("\n\n");
+      buffer = parts.pop() || "";
+
+      for (const part of parts) {
+        // "data: {...}" 라인만 처리 (MVP)
+        const lines = part.split("\n").map(l => l.trim());
+        for (const line of lines) {
+          if (!line.startsWith("data:")) continue;
+          const jsonStr = line.slice(5).trim();
+          if (!jsonStr) continue;
+          try {
+            const evt = JSON.parse(jsonStr);
+            onEvent(evt);
+          } catch (e) {
+            // 파싱 실패는 무시 (MVP)
+          }
+        }
+      }
+    }
+  }
+
+  async function sendMessage() {
+    if (!sessionId) { alert("세션을 먼저 생성하세요."); return; }
+    const text = $("inputText").value.trim();
+    if (!text) return;
+
+    $("inputText").value = "";
+    $("btnSend").disabled = true;
+    $("btnStop").disabled = false;
+
+    appendMsg("user", text);
+
+    setStatus("streaming...");
+    const assistantBody = appendMsg("assistant", ""); // 스트리밍으로 채워 넣기
+    let assistantFull = "";
+
+    try {
+      await postSSE("/chat/stream", { session_id: sessionId, text }, (evt) => {
+        if (evt.type === "meta" && evt.event === "start") {
+          // noop
+          return;
+        }
+        if (evt.type === "delta") {
+          assistantFull += (evt.text || "");
+          assistantBody.textContent = assistantFull;
+          $("chatlog").scrollTop = $("chatlog").scrollHeight;
+          return;
+        }
+        if (evt.type === "meta" && evt.event === "memory_saved") {
+          $("memorySaved").textContent = String(evt.count ?? 0);
+          return;
+        }
+        if (evt.type === "meta" && evt.event === "done") {
+          setStatus("done");
+          return;
+        }
+        if (evt.type === "error") {
+          setStatus("error");
+          assistantBody.textContent = `[ERROR] ${evt.message || "unknown"}`;
+          return;
+        }
+      });
+    } catch (e) {
+      setStatus("error");
+      assistantBody.textContent = `[ERROR] ${e.message}`;
+    } finally {
+      $("btnSend").disabled = false;
+      $("btnStop").disabled = true;
+      abortController = null;
+    }
+  }
+
+  function stopStreaming() {
+    if (abortController) abortController.abort();
+    abortController = null;
+    $("btnStop").disabled = true;
+    $("btnSend").disabled = false;
+    setStatus("stopped");
+  }
+
+  // ====== Logs ======
+  async function fetchMessages() {
+    if (!sessionId) return;
+    setStatus("fetching messages...");
+    const res = await apiFetch(`/session/${sessionId}/messages?limit=200`);
+    const json = await res.json();
+    setStatus("messages loaded");
+
+    // 화면에 로그를 “덮어쓰기”로 표시 (MVP)
+    clearChat();
+    (json.items || []).forEach((m) => {
+      const role = (m.role === "assistant") ? "assistant" : "user";
+      appendMsg(role, m.content);
+    });
+  }
+
+  // ====== Wire up ======
+  window.addEventListener("load", async () => {
+    $("apiBase").value = DEFAULT_API_BASE;
+    setEnvPill(DEFAULT_API_BASE);
+    setSessionPill(null);
+
+    $("btnReload").addEventListener("click", async () => {
+      try { await loadCatalog(); } catch (e) { alert(e.message); setStatus("error"); }
+    });
+    $("btnCreateSession").addEventListener("click", async () => {
+      try { await createSession(); } catch (e) { alert(e.message); setStatus("error"); }
+    });
+    $("btnSend").addEventListener("click", sendMessage);
+    $("btnStop").addEventListener("click", stopStreaming);
+    $("btnReset").addEventListener("click", resetAll);
+    $("btnFetchMessages").addEventListener("click", async () => {
+      try { await fetchMessages(); } catch (e) { alert(e.message); setStatus("error"); }
+    });
+
+    $("inputText").addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+        sendMessage();
+      }
+    });
+
+    try { await loadCatalog(); } catch (e) { alert(e.message); setStatus("error"); }
+  });
+</script>
+</body>
+</html>
