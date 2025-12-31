@@ -65,3 +65,23 @@ def get_session_by_id(session_id: str):
 def get_user_by_id(user_id: str):
     res = _supabase.table("users").select("*").eq("id", user_id).limit(1).execute()
     return res.data[0] if res.data else None
+
+def insert_message(session_id: str, user_id: str | None, role: str, content: str):
+    payload = {
+        "session_id": session_id,
+        "user_id": user_id,
+        "role": role,
+        "content": content,
+    }
+    res = _supabase.table("messages").insert(payload).execute()
+    return res.data[0] if res.data else None
+
+def upsert_user(user_id: str, tone=None, goal=None, expertise=None, age_band=None):
+    payload = {"id": user_id, "tone": tone, "goal": goal, "expertise": expertise, "age_band": age_band}
+    res = _supabase.table("users").upsert(payload).execute()
+    return res.data[0] if res.data else None
+
+def insert_memory_item(user_id: str, session_id: str | None, kind: str | None, text: str, source: str | None = None):
+    payload = {"user_id": user_id, "session_id": session_id, "kind": kind, "text": text, "source": source}
+    res = _supabase.table("memory_items").insert(payload).execute()
+    return res.data[0] if res.data else None

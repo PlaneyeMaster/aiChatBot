@@ -11,6 +11,9 @@ from repos.supabase_repo import (
 )
 from services.openai_service import _client, model_name
 from services.prompt_service import build_system_prompt
+from repos.supabase_repo import insert_message
+from services.rag_personal import retrieve_personal_memory
+from services.memory_writer import write_personal_memory
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 
@@ -24,7 +27,6 @@ def sse(data: dict) -> str:
 
 @router.post("/stream")
 async def chat_stream(req: ChatStreamRequest):
-    # (앞부분 Supabase 데이터 로드 로직은 동일)
     sess = get_session_by_id(req.session_id)
     if not sess:
         raise HTTPException(status_code=404, detail="Session not found")
@@ -38,39 +40,70 @@ async def chat_stream(req: ChatStreamRequest):
     if sess.get("user_id"):
         user_profile = get_user_by_id(sess["user_id"])
 
+    # 1) 개인 메모리 검색 (user_id 없으면 스킵)
+    memories = []
+    if sess.get("user_id"):
+        memories = await retrieve_personal_memory(sess["user_id"], req.text, top_k=5)
+
     system_prompt = build_system_prompt(
         persona_prompt=character.get("persona_prompt", ""),
         scenario_prompt=scenario.get("scenario_prompt", ""),
         user_profile=user_profile,
+        memories=memories,
     )
 
-    client = _client()
     model = model_name()
 
     async def event_generator():
         yield sse({"type": "meta", "event": "start", "model": model})
 
+        # 2) 유저 메시지 저장
         try:
-            # client.chat.completions.create를 사용하고 stream=True를 설정해야 합니다
-            response = await client.chat.completions.create(
+            insert_message(session_id=req.session_id, user_id=sess.get("user_id"), role="user", content=req.text)
+        except Exception:
+            pass  # MVP: 저장 실패가 스트리밍을 막지 않게
+
+        assistant_full = ""
+
+        try:
+            resp = await openai_client().chat.completions.create(
                 model=model,
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": req.text},
                 ],
-                stream=True, # 스트리밍 활성화
+                stream=True,
             )
 
-            # 비동기 반복문을 통해 스트림 데이터를 처리합니다
-            async for chunk in response:
-                if chunk.choices and chunk.choices[0].delta.content:
-                    delta_text = chunk.choices[0].delta.content
-                    yield sse({"type": "delta", "text": delta_text})
-            
+            async for chunk in resp:
+                delta = chunk.choices[0].delta
+                if delta and delta.content:
+                    assistant_full += delta.content
+                    yield sse({"type": "delta", "text": delta.content})
+
+            # 3) assistant 메시지 저장
+            try:
+                insert_message(session_id=req.session_id, user_id=sess.get("user_id"), role="assistant", content=assistant_full)
+            except Exception:
+                pass
+
+            # 4) 개인 메모리 추출+저장 (user_id 없으면 스킵)
+            if sess.get("user_id"):
+                try:
+                    result = await write_personal_memory(
+                        user_id=sess["user_id"],
+                        session_id=req.session_id,
+                        user_text=req.text,
+                        assistant_text=assistant_full,
+                    )
+                    yield sse({"type": "meta", "event": "memory_saved", "count": result.get("saved", 0)})
+                except Exception:
+                    # 메모리 실패도 스트림을 망치지 않음
+                    yield sse({"type": "meta", "event": "memory_saved", "count": 0})
+
             yield sse({"type": "meta", "event": "done"})
 
         except Exception as e:
-            # 에러 발생 시 SSE 형식으로 에러 메시지 전송
             yield sse({"type": "error", "message": str(e)})
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
