@@ -9,7 +9,7 @@ from repos.supabase_repo import (
     get_scenario_by_id,
     get_user_by_id,
 )
-from services.openai_service import _client, model_name
+from services.openai_service import client as openai_client, model_name
 from services.prompt_service import build_system_prompt
 from repos.supabase_repo import insert_message
 from services.rag_personal import retrieve_personal_memory

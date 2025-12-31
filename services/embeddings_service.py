@@ -2,6 +2,7 @@ import os
 from openai import AsyncOpenAI
 from services.openai_service import client as openai_client
 
+
 def embed_model() -> str:
     return os.getenv("OPENAI_EMBED_MODEL", "text-embedding-3-small")
 
