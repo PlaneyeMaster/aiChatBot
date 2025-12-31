@@ -44,13 +44,3 @@ def delete_memory_vectors(user_id: str, vector_ids: list[str]) -> None:
         return
     idx = _get_index()
     idx.delete(ids=ids, namespace=memory_namespace(user_id))
-
-def memory_namespace(user_id: str) -> str:
-    return f"mem:{user_id}"
-
-def delete_memory_vectors(user_id: str, vector_ids: list[str]) -> None:
-    ids = [x for x in vector_ids if x]
-    if not ids:
-        return
-    idx = get_index()  # 기존 pinecone index getter 사용
-    idx.delete(ids=ids, namespace=memory_namespace(user_id))
