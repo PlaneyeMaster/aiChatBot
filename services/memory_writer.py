@@ -10,17 +10,40 @@ from repos.pinecone_repo import query_memory
 from services.memory_dedupe import is_text_duplicate, is_vector_duplicate
 
 MEMORY_EXTRACT_SYSTEM = """
-당신은 7세 아이의 대화를 분석하는 아동 심리 전문가입니다.
-대화 내용 중 아이의 '칭찬할 점', '기억해야 할 친구/가족', '좋아하는 것', '오늘의 기분'을 추출하세요.
+너는 개인화 메모리를 추출하는 도우미다.
+아래 대화에서 '장기적으로 유용한 사용자 정보'만 후보로 뽑아라.
 
-[규칙]
-1. 민감한 개인정보(집 주소, 실명 등)는 절대 추출하지 마세요.
-2. 중요도(importance)는 1~5로 정하며, 아이의 감정이나 성취는 4점 이상으로 책정하세요.
-3. 반드시 아래 JSON 형식을 지키세요.
+저장 기준:
+- 선호/비선호, 목표, 제약(시간/예산/기한), 반복 프로젝트 맥락, 사용 습관/루틴
+- 당일 일정/약속도 단기 계획에 유용하면 저장한다(예: 면접/약속/회의 시간).
+- 일회성 잡담/짧은 감탄은 제외
+- 민감정보(건강/정치/종교/성생활/범죄/정체성 추정)는 제외
 
+출력은 반드시 JSON 객체.
+형식: { "items": [ ... ] }
+각 항목은:
+{
+  "kind": "preference|goal|constraint|profile|project_context",
+  "text": "한 문장",
+  "importance": 1~5,
+  "ttl_days": 7|30|180|365
+}
+
+규칙:
+- text는 20~120자 사이를 권장(너무 짧거나 길면 제외 대상)
+- importance가 4~5인 것만 저장 후보로 간주
+
+예시:
+입력: "오늘 15시에 회사 면접, 17시에는 친구 약속이 있어."
+출력:
 {
   "items": [
-    { "text": "아이의 기억 내용", "kind": "fact/preference/emotion", "importance": 5, "ttl_days": 30 }
+    {
+      "kind": "constraint",
+      "text": "오늘 15시에 회사 면접이 있고 17시에 친구 약속이 있다.",
+      "importance": 4,
+      "ttl_days": 7
+    }
   ]
 }
 """
@@ -60,8 +83,8 @@ async def extract_memory_candidates(history_text: str) -> list[dict]:
             cleaned.append({
                 "kind": (it.get("kind") or "").strip(),
                 "text": txt,
-                "importance": it.get("importance", 3),
-                "ttl_days": it.get("ttl_days", 30),
+                "importance": it.get("importance"),
+                "ttl_days": it.get("ttl_days"),
             })
         if os.getenv("MEMORY_DEBUG") == "1":
             print(f"memory_extract_cleaned={cleaned}", flush=True)
