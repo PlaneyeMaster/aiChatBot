@@ -1,4 +1,4 @@
-pinecone-client
+pinecone
 openai==2.14.0
 fastapi==0.115.0
 uvicorn[standard]==0.30.6
