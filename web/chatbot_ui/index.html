@@ -102,6 +102,8 @@
         <input id="openaiModel" placeholder="예: gpt-4o-mini" />
       </div>
     </div>
+    <label>Admin API Key (프로필용)</label>
+    <input id="adminKey" value="vaxportabcdefg" />
 
     <div class="two">
       <div>
@@ -327,7 +329,13 @@
   async function apiFetch(path, opts={}){
     setApiPill();
     const base = $("apiBase").value.trim();
-    const res = await fetch(base + path, opts);
+    const headers = {
+      ...(opts.headers || {}),
+    };
+    if (path.startsWith("/admin/")) {
+      headers["X-Admin-Key"] = $("adminKey").value.trim();
+    }
+    const res = await fetch(base + path, { ...opts, headers });
     if (!res.ok){
       const t = await res.text().catch(()=> "");
       throw new Error(`HTTP ${res.status} ${res.statusText} :: ${t}`);
