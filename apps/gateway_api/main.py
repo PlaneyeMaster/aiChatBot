@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from repos.supabase_repo import supabase_client
@@ -10,6 +11,14 @@ from apps.gateway_api.routes_messages import router as messages_router
 
 
 app = FastAPI(title="AI Human Gateway API")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["https://aichatbot-web.onrender.com"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.include_router(catalog_router)
 app.include_router(seed_router)
