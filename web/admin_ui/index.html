@@ -55,6 +55,9 @@
     <label>User ID</label>
     <input id="userId" value="user_001"/>
 
+    <label>Admin API Key</label>
+    <input id="adminKey" value="vaxportabcdefg" />
+
     <div style="margin-top:12px;" class="tabs">
       <div class="tab active" data-tab="users">Users</div>
       <div class="tab" data-tab="sessions">Sessions</div>
@@ -181,7 +184,11 @@
 
   async function apiFetch(path, opts={}) {
     setApiPill();
-    const res = await fetch(apiBase() + path, opts);
+    const headers = {
+      ...(opts.headers || {}),
+      "X-Admin-Key": $("adminKey").value.trim(),
+    };
+    const res = await fetch(apiBase() + path, { ...opts, headers });
     if (!res.ok) {
       const t = await res.text().catch(()=> "");
       throw new Error(`HTTP ${res.status} ${res.statusText} :: ${t}`);
