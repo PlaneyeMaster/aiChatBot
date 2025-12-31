@@ -85,3 +85,26 @@ def insert_memory_item(user_id: str, session_id: str | None, kind: str | None, t
     payload = {"user_id": user_id, "session_id": session_id, "kind": kind, "text": text, "source": source}
     res = _supabase.table("memory_items").insert(payload).execute()
     return res.data[0] if res.data else None
+
+def list_messages(session_id: str, limit: int = 200):
+    res = (
+        _supabase.table("messages")
+        .select("id,session_id,user_id,role,content,created_at")
+        .eq("session_id", session_id)
+        .order("created_at", desc=False)
+        .limit(limit)
+        .execute()
+    )
+    return res.data or []
+
+def list_recent_memory_texts(user_id: str, limit: int = 50):
+    res = (
+        _supabase.table("memory_items")
+        .select("text,created_at")
+        .eq("user_id", user_id)
+        .order("created_at", desc=True)
+        .limit(limit)
+        .execute()
+    )
+    rows = res.data or []
+    return [r["text"] for r in rows if r.get("text")]
