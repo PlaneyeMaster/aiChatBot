@@ -15,7 +15,10 @@ app = FastAPI(title="AI Human Gateway API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://aichatbot-web.onrender.com"],
+    allow_origins=[
+        "https://aichatbot-web.onrender.com",
+        "https://aichatbot-admin.onrender.com",
+    ],
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
