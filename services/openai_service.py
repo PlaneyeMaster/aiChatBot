@@ -20,10 +20,10 @@ def client() -> AsyncOpenAI:
 def model_name() -> str:
     return os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 
-async def get_chat_stream(messages: list) -> AsyncGenerator[str, None]:
+async def get_chat_stream(messages: list, model: str | None = None) -> AsyncGenerator[str, None]:
     c = client()
     stream = await c.chat.completions.create(
-        model=model_name(),
+        model=model or model_name(),
         messages=messages,
         stream=True,
     )
