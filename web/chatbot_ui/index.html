@@ -5,394 +5,750 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>AI Chatbot MVP</title>
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif; margin: 0; background: #0b0f14; color: #e6edf3; }
-    header { padding: 16px 20px; border-bottom: 1px solid #1f2937; display: flex; gap: 12px; align-items: center; }
-    header h1 { font-size: 16px; margin: 0; font-weight: 700; }
-    .container { display: grid; grid-template-columns: 360px 1fr; gap: 16px; padding: 16px; }
-    .card { background: #0f1620; border: 1px solid #1f2937; border-radius: 12px; padding: 14px; }
-    .card h2 { margin: 0 0 10px; font-size: 14px; }
-    label { display:block; font-size: 12px; color: #9fb0c0; margin: 10px 0 6px; }
-    input, select, button, textarea { width: 100%; box-sizing: border-box; }
-    input, select, textarea { background: #0b1220; border: 1px solid #243244; color: #e6edf3; border-radius: 10px; padding: 10px 12px; outline: none; }
-    button { background: #2563eb; border: 0; border-radius: 10px; padding: 10px 12px; color: white; font-weight: 700; cursor: pointer; }
-    button.secondary { background: #1f2937; }
-    button.danger { background: #b91c1c; }
-    button:disabled { opacity: 0.45; cursor: not-allowed; }
-    .row { display:flex; gap: 10px; }
-    .row > * { flex: 1; }
-    .muted { color: #9fb0c0; font-size: 12px; }
-    .pill { display: inline-block; padding: 4px 8px; border: 1px solid #243244; border-radius: 999px; font-size: 12px; color: #9fb0c0; }
-    .chat { height: calc(100vh - 120px); display:flex; flex-direction: column; }
-    .chatlog { flex: 1; overflow: auto; padding: 14px; background: #0b1220; border: 1px solid #243244; border-radius: 12px; }
-    .msg { margin: 10px 0; line-height: 1.5; white-space: pre-wrap; }
-    .msg .meta { font-size: 12px; color: #9fb0c0; margin-bottom: 4px; }
-    .msg.user { color: #e6edf3; }
-    .msg.assistant { color: #dbeafe; }
-    .composer { display:flex; gap: 10px; margin-top: 12px; }
-    .composer textarea { height: 70px; resize: none; }
-    .composer .buttons { width: 160px; display:flex; flex-direction: column; gap: 10px; }
-    .status { margin-top: 10px; display:flex; justify-content: space-between; gap: 10px; }
-    .kv { display:flex; gap: 10px; align-items:center; }
-    code { background: #111827; padding: 2px 6px; border-radius: 6px; border: 1px solid #1f2937; }
-    a { color: #93c5fd; }
+    :root{
+      --bg:#0b0f14; --panel:#0f1620; --panel2:#0b1220;
+      --border:#1f2937; --border2:#243244; --text:#e6edf3; --muted:#9fb0c0;
+      --primary:#2563eb; --danger:#b91c1c; --good:#16a34a;
+      --radius:14px;
+    }
+    *{ box-sizing:border-box; }
+    body{ margin:0; font-family:-apple-system,BlinkMacSystemFont,"Noto Sans KR",Arial,sans-serif; background:var(--bg); color:var(--text); }
+    header{ padding:14px 18px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; gap:10px;}
+    header h1{ margin:0; font-size:15px; }
+    .pill{ display:inline-flex; align-items:center; gap:8px; padding:4px 10px; border:1px solid var(--border2); border-radius:999px; font-size:12px; color:var(--muted); background:rgba(255,255,255,0.02); }
+    .wrap{ padding:16px; display:grid; grid-template-columns: 420px 1fr; gap:16px; }
+    .card{ background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:14px; }
+    label{ display:block; font-size:12px; color:var(--muted); margin:10px 0 6px; }
+    input, select, textarea, button{ width:100%; }
+    input, select, textarea{
+      background:var(--panel2); border:1px solid var(--border2); border-radius:12px;
+      color:var(--text); padding:10px 12px; outline:none;
+    }
+    textarea{ min-height:88px; resize:vertical; }
+    button{
+      border:0; border-radius:12px; padding:10px 12px; cursor:pointer;
+      font-weight:700; color:white; background:var(--primary);
+    }
+    button.secondary{ background:#1f2937; }
+    button.danger{ background:var(--danger); }
+    button:disabled{ opacity:0.45; cursor:not-allowed; }
+    .row{ display:flex; gap:10px; }
+    .row > *{ flex:1; }
+    .tiny{ font-size:12px; color:var(--muted); }
+    .two{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .hr{ height:1px; background:var(--border); margin:12px 0; }
+    .mono{ font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+
+    /* Chat */
+    .chatWrap{ display:flex; flex-direction:column; gap:12px; height: calc(100vh - 32px - 56px); }
+    .chatBox{ flex:1; overflow:auto; padding:10px; background:var(--panel2); border:1px solid var(--border2); border-radius:var(--radius); }
+    .msg{ margin:10px 0; display:flex; gap:10px; }
+    .msg .role{ width:70px; flex:0 0 auto; font-size:12px; color:var(--muted); padding-top:4px; }
+    .bubble{
+      max-width: 900px;
+      background:#0f1a2a; border:1px solid var(--border2); border-radius:14px;
+      padding:10px 12px; line-height:1.5;
+      white-space:pre-wrap;
+    }
+    .msg.user .bubble{ background:#111827; }
+    .msg.assistant .bubble{ background:#0f1a2a; }
+    .msg.system .bubble{ background:#1a1325; }
+    .metaLine{ font-size:12px; color:var(--muted); margin-top:6px; }
+    .inputBar{ display:grid; grid-template-columns: 1fr 140px 140px; gap:10px; align-items:stretch; }
+    .inputBar textarea{ min-height:52px; height:52px; resize:none; }
+    .statusGrid{ display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
+    .stat{ background:rgba(255,255,255,0.02); border:1px solid var(--border2); border-radius:12px; padding:10px; }
+    .stat .k{ font-size:12px; color:var(--muted); }
+    .stat .v{ font-size:13px; margin-top:6px; word-break:break-all; }
+    .good{ color:#86efac; }
+    .bad{ color:#fca5a5; }
+
+    .tabs{ display:flex; gap:8px; margin-top:10px; }
+    .tab{ padding:8px 10px; border-radius:10px; border:1px solid var(--border2); background:var(--panel2);
+      cursor:pointer; font-size:12px; color:var(--muted); user-select:none; }
+    .tab.active{ background:#111c2e; color:var(--text); border-color:#2b3e5f; }
+    .hidden{ display:none !important; }
+
+    a{ color:#93c5fd; text-decoration:none; }
   </style>
 </head>
 <body>
 <header>
-  <h1>AI Chatbot MVP</h1>
-  <span class="pill" id="envPill">API: (loading)</span>
-  <span class="pill" id="sessionPill">Session: -</span>
+  <div style="display:flex; align-items:center; gap:10px;">
+    <h1>AI Chatbot MVP</h1>
+    <span class="pill" id="pillStatus">idle</span>
+  </div>
+  <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:flex-end;">
+    <span class="pill" id="pillApi">API: -</span>
+    <span class="pill">session: <span class="mono" id="pillSession">-</span></span>
+  </div>
 </header>
 
-<div class="container">
+<div class="wrap">
   <!-- Left panel -->
-  <div class="card">
-    <h2>세션 설정</h2>
+  <div class="card" style="overflow:auto; max-height: calc(100vh - 32px - 56px);">
+    <h2 style="margin:0 0 8px; font-size:14px;">Controls</h2>
 
-    <label>Backend API Base</label>
-    <input id="apiBase" />
+    <label>API Base</label>
+    <input id="apiBase" value="https://aichatbot-ez4g.onrender.com" />
 
-    <div class="row">
+    <div class="two">
       <div>
         <label>User ID</label>
-        <input id="userId" placeholder="예: user_001" value="user_001" />
+        <input id="userId" value="user_001" />
       </div>
       <div>
-        <label>Age Band (옵션)</label>
-        <select id="ageBand">
-          <option value="">(미지정)</option>
-          <option value="10s">10대</option>
-          <option value="20s">20대</option>
-          <option value="30s">30대</option>
-          <option value="40s">40대</option>
-          <option value="50s">50대</option>
-          <option value="60s+">60대+</option>
-        </select>
+        <label>OpenAI Model (optional)</label>
+        <input id="openaiModel" placeholder="예: gpt-4o-mini" />
       </div>
     </div>
 
-    <label>Character</label>
-    <select id="characterSelect"></select>
+    <div class="two">
+      <div>
+        <label>Character</label>
+        <select id="character"></select>
+      </div>
+      <div>
+        <label>Scenario</label>
+        <select id="scenario"></select>
+      </div>
+    </div>
 
-    <label>Scenario</label>
-    <select id="scenarioSelect"></select>
-
-    <div class="row" style="margin-top: 12px;">
-      <button id="btnReload" class="secondary">캐릭터/시나리오 새로고침</button>
+    <div class="row" style="margin-top:10px;">
+      <button id="btnReloadCatalog" class="secondary">캐릭터/시나리오 새로고침</button>
       <button id="btnCreateSession">세션 생성</button>
     </div>
 
-    <div class="row" style="margin-top: 10px;">
-      <button id="btnFetchMessages" class="secondary" disabled>세션 로그 조회</button>
-      <button id="btnReset" class="danger">리셋</button>
+    <div class="hr"></div>
+
+    <div class="tabs">
+      <div class="tab active" data-tab="profile">Profile</div>
+      <div class="tab" data-tab="replay">Replay</div>
+      <div class="tab" data-tab="debug">Debug</div>
     </div>
 
-    <div class="status">
-      <div class="kv">
-        <span class="muted">Status:</span>
-        <span id="statusText" class="muted">idle</span>
+    <!-- Profile Tab -->
+    <div id="tab-profile" style="margin-top:10px;">
+      <div class="row">
+        <button id="btnLoadProfile" class="secondary">프로필 조회</button>
+        <button id="btnSaveProfile">프로필 저장</button>
       </div>
-      <div class="kv">
-        <span class="muted">Memory Saved:</span>
-        <span id="memorySaved" class="muted">0</span>
+
+      <div class="two" style="margin-top:10px;">
+        <div>
+          <label>Tone</label>
+          <input id="tone" placeholder="예: 정중하고 간결" />
+        </div>
+        <div>
+          <label>Expertise</label>
+          <select id="expertise">
+            <option value="">(미지정)</option>
+            <option value="beginner">초급</option>
+            <option value="intermediate">중급</option>
+            <option value="advanced">고급</option>
+          </select>
+        </div>
+        <div>
+          <label>Goal</label>
+          <input id="goal" placeholder="예: 업무 우선순위 정리" />
+        </div>
+        <div>
+          <label>Age Band</label>
+          <select id="age_band">
+            <option value="">(미지정)</option>
+            <option value="10s">10대</option>
+            <option value="20s">20대</option>
+            <option value="30s">30대</option>
+            <option value="40s">40대</option>
+            <option value="50s">50대</option>
+            <option value="60s+">60대+</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="tiny" style="margin-top:10px; line-height:1.5;">
+        프로필은 <code>/admin/users</code>에 저장되며, 서버에서 system prompt에 반영되도록 확장할 수 있습니다.
       </div>
     </div>
 
-    <p class="muted" style="margin-top: 12px;">
-      - 스트리밍: <code>POST /chat/stream</code><br/>
-      - 로그: <code>GET /session/{id}/messages</code>
-    </p>
+    <!-- Replay Tab -->
+    <div id="tab-replay" class="hidden" style="margin-top:10px;">
+      <label>Replay Session ID</label>
+      <input id="replaySessionId" placeholder="예: 0ef3...fec08b" />
+
+      <div class="row" style="margin-top:10px;">
+        <button id="btnReplay" class="secondary">세션 로그 불러오기</button>
+        <button id="btnReplayToChat" class="secondary">채팅창에 로드</button>
+      </div>
+
+      <div class="tiny" style="margin-top:10px; line-height:1.5;">
+        우선 <code>GET /session/{id}/messages</code>로 시도하고, 실패하면 <code>/admin/sessions/{id}/messages</code>로 자동 fallback 합니다.
+      </div>
+    </div>
+
+    <!-- Debug Tab -->
+    <div id="tab-debug" class="hidden" style="margin-top:10px;">
+      <div class="statusGrid">
+        <div class="stat">
+          <div class="k">profile_applied</div>
+          <div class="v" id="dbgProfileApplied">-</div>
+        </div>
+        <div class="stat">
+          <div class="k">memory_stats</div>
+          <div class="v" id="dbgMemoryStats">-</div>
+        </div>
+        <div class="stat">
+          <div class="k">last_error</div>
+          <div class="v" id="dbgLastError">-</div>
+        </div>
+        <div class="stat">
+          <div class="k">streaming</div>
+          <div class="v" id="dbgStreaming">false</div>
+        </div>
+      </div>
+
+      <div class="hr"></div>
+
+      <label>Persona Prompt (selected)</label>
+      <textarea id="dbgPersona" readonly></textarea>
+
+      <label>Scenario Prompt (selected)</label>
+      <textarea id="dbgScenario" readonly></textarea>
+    </div>
+
+    <div class="hr"></div>
+
+    <div class="tiny" style="line-height:1.6;">
+      Catalog:
+      <a href="#" id="linkCharacters">/catalog/characters</a> /
+      <a href="#" id="linkScenarios">/catalog/scenarios</a><br/>
+      API Docs:
+      <a href="#" id="linkDocs">/docs</a>
+    </div>
   </div>
 
-  <!-- Right panel -->
-  <div class="card chat">
-    <h2>채팅</h2>
-    <div id="chatlog" class="chatlog"></div>
-
-    <div class="composer">
-      <textarea id="inputText" placeholder="메시지를 입력하세요..."></textarea>
-      <div class="buttons">
-        <button id="btnSend" disabled>전송</button>
-        <button id="btnStop" class="secondary" disabled>중지</button>
+  <!-- Right: chat -->
+  <div class="card chatWrap">
+    <div class="statusGrid">
+      <div class="stat">
+        <div class="k">Model</div>
+        <div class="v mono" id="statModel">-</div>
+      </div>
+      <div class="stat">
+        <div class="k">Memory Stats</div>
+        <div class="v mono" id="statMemory">saved:0 dup:0 low:0</div>
+      </div>
+      <div class="stat">
+        <div class="k">Profile</div>
+        <div class="v" id="statProfile">not loaded</div>
+      </div>
+      <div class="stat">
+        <div class="k">Last Error</div>
+        <div class="v" id="statError">-</div>
       </div>
     </div>
 
-    <p class="muted" style="margin-top: 10px;">
-      팁: 우선 <b>세션 생성</b> 후 전송하세요.
-    </p>
+    <div class="chatBox" id="chatBox"></div>
+
+    <div class="inputBar">
+      <textarea id="inputText" placeholder="메시지를 입력하세요. (Shift+Enter 줄바꿈)"></textarea>
+      <button id="btnSend">Send</button>
+      <button id="btnStop" class="danger" disabled>Stop</button>
+    </div>
+
+    <div class="row">
+      <button id="btnRetry" class="secondary" disabled>Retry (마지막 질문 재전송)</button>
+      <button id="btnClear" class="secondary">채팅 비우기</button>
+    </div>
+
+    <div class="tiny">
+      SSE: <code>POST /chat/stream</code> (text/event-stream). 서버가 meta 이벤트를 추가로 보내면 자동 표시됩니다.
+    </div>
   </div>
 </div>
 
 <script>
-  // ====== Config ======
-  const DEFAULT_API_BASE = "https://aichatbot-ez4g.onrender.com"; // <-- 필요하면 변경
   const $ = (id) => document.getElementById(id);
 
-  // ====== State ======
-  let sessionId = null;
+  let catalog = { characters: [], scenarios: [] };
+  let currentSession = null;
+  let lastUserText = "";
+  let streaming = false;
   let abortController = null;
 
-  // ====== Helpers ======
-  function setStatus(msg) { $("statusText").textContent = msg; }
-  function setEnvPill(apiBase) { $("envPill").textContent = "API: " + apiBase; }
-  function setSessionPill(id) { $("sessionPill").textContent = "Session: " + (id || "-"); }
+  // meta state
+  let meta = {
+    model: "-",
+    profile_applied: false,
+    memory_stats: { saved:0, skipped_dup:0, skipped_low:0 },
+    last_error: "-"
+  };
 
-  function appendMsg(role, text) {
-    const el = document.createElement("div");
-    el.className = "msg " + role;
+  function setPillStatus(text){ $("pillStatus").textContent = text; }
+  function setApiPill(){
+    const base = $("apiBase").value.trim();
+    $("pillApi").textContent = "API: " + base;
+    $("linkDocs").href = base + "/docs";
+    $("linkCharacters").href = base + "/catalog/characters";
+    $("linkScenarios").href = base + "/catalog/scenarios";
+  }
+  function setSessionPill(){
+    $("pillSession").textContent = currentSession?.id || "-";
+  }
+  function setError(msg){
+    meta.last_error = msg || "-";
+    $("statError").textContent = meta.last_error;
+    $("dbgLastError").textContent = meta.last_error;
+  }
+  function setModel(m){
+    meta.model = m || "-";
+    $("statModel").textContent = meta.model;
+  }
+  function setMemoryStats(obj){
+    if (!obj) return;
+    meta.memory_stats.saved = obj.saved ?? meta.memory_stats.saved;
+    meta.memory_stats.skipped_dup = obj.skipped_dup ?? meta.memory_stats.skipped_dup;
+    meta.memory_stats.skipped_low = obj.skipped_low ?? meta.memory_stats.skipped_low;
 
-    const meta = document.createElement("div");
-    meta.className = "meta";
-    meta.textContent = role === "user" ? "USER" : "ASSISTANT";
-    el.appendChild(meta);
-
-    const body = document.createElement("div");
-    body.textContent = text;
-    el.appendChild(body);
-
-    $("chatlog").appendChild(el);
-    $("chatlog").scrollTop = $("chatlog").scrollHeight;
-
-    return body; // assistant streaming에 활용 가능
+    $("statMemory").textContent = `saved:${meta.memory_stats.saved} dup:${meta.memory_stats.skipped_dup} low:${meta.memory_stats.skipped_low}`;
+    $("dbgMemoryStats").textContent = JSON.stringify(meta.memory_stats);
+  }
+  function setProfileApplied(v){
+    meta.profile_applied = !!v;
+    $("dbgProfileApplied").textContent = meta.profile_applied ? "true" : "false";
+  }
+  function setStreaming(v){
+    streaming = !!v;
+    $("dbgStreaming").textContent = streaming ? "true" : "false";
+    $("btnStop").disabled = !streaming;
+    $("btnSend").disabled = streaming;
   }
 
-  function clearChat() { $("chatlog").innerHTML = ""; }
-
-  async function apiFetch(path, opts = {}) {
+  async function apiFetch(path, opts={}){
+    setApiPill();
     const base = $("apiBase").value.trim();
-    const url = base + path;
-    const res = await fetch(url, opts);
-    if (!res.ok) {
-      const t = await res.text().catch(() => "");
+    const res = await fetch(base + path, opts);
+    if (!res.ok){
+      const t = await res.text().catch(()=> "");
       throw new Error(`HTTP ${res.status} ${res.statusText} :: ${t}`);
     }
     return res;
   }
 
-  // ====== Catalog ======
-  async function loadCatalog() {
-    setStatus("loading catalog...");
-    const [cRes, sRes] = await Promise.all([
-      apiFetch("/catalog/characters"),
-      apiFetch("/catalog/scenarios"),
-    ]);
-
-    const cJson = await cRes.json();
-    const sJson = await sRes.json();
-
-    const cSel = $("characterSelect");
-    const sSel = $("scenarioSelect");
-    cSel.innerHTML = "";
-    sSel.innerHTML = "";
-
-    (cJson.items || []).forEach((c) => {
-      const opt = document.createElement("option");
-      opt.value = c.id;
-      opt.textContent = `${c.name} (${c.id})`;
-      cSel.appendChild(opt);
-    });
-
-    (sJson.items || []).forEach((s) => {
-      const opt = document.createElement("option");
-      opt.value = s.id;
-      opt.textContent = `${s.name} (${s.id})`;
-      sSel.appendChild(opt);
-    });
-
-    setStatus("catalog loaded");
+  function escapeHtml(s){
+    return (s||"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;");
   }
 
-  // ====== Session ======
-  async function createSession() {
-    const userId = $("userId").value.trim();
-    const characterId = $("characterSelect").value;
-    const scenarioId = $("scenarioSelect").value;
+  function appendMsg(role, text, metaLine=""){
+    const box = $("chatBox");
+    const div = document.createElement("div");
+    div.className = "msg " + role;
+    div.innerHTML = `
+      <div class="role">${role.toUpperCase()}</div>
+      <div style="flex:1;">
+        <div class="bubble" data-role="${role}">${escapeHtml(text)}</div>
+        ${metaLine ? `<div class="metaLine">${escapeHtml(metaLine)}</div>` : ""}
+      </div>
+    `;
+    box.appendChild(div);
+    box.scrollTop = box.scrollHeight;
+    return div.querySelector(".bubble");
+  }
 
-    if (!userId) { alert("user_id를 입력하세요."); return; }
-    if (!characterId || !scenarioId) { alert("캐릭터/시나리오를 선택하세요."); return; }
+  function updateLastAssistantBubbleText(bubble, text){
+    bubble.innerHTML = escapeHtml(text);
+    const box = $("chatBox");
+    box.scrollTop = box.scrollHeight;
+  }
 
-    // (옵션) age_band를 서버에 저장하고 싶다면, 별도 profile API를 만들었을 때 여기서 호출하면 됩니다.
-    // 현재는 세션 생성에 영향 없도록 단순 보관만 합니다.
+  // ---------- Tabs ----------
+  function showTab(name){
+    document.querySelectorAll(".tab").forEach(t => t.classList.toggle("active", t.dataset.tab === name));
+    $("tab-profile").classList.toggle("hidden", name !== "profile");
+    $("tab-replay").classList.toggle("hidden", name !== "replay");
+    $("tab-debug").classList.toggle("hidden", name !== "debug");
+  }
+  document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => showTab(t.dataset.tab)));
 
-    setStatus("creating session...");
-    const res = await apiFetch("/session/create", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ user_id: userId, character_id: characterId, scenario_id: scenarioId }),
-    });
+  // ---------- Catalog ----------
+  async function loadCatalog(){
+    setPillStatus("loading catalog...");
+    try{
+      const [cRes, sRes] = await Promise.all([
+        apiFetch("/catalog/characters"),
+        apiFetch("/catalog/scenarios")
+      ]);
+      const cJson = await cRes.json();
+      const sJson = await sRes.json();
 
-    const json = await res.json();
-    sessionId = json.session?.id || null;
-    setSessionPill(sessionId);
+      catalog.characters = cJson.items || [];
+      catalog.scenarios = sJson.items || [];
 
-    $("btnSend").disabled = !sessionId;
-    $("btnFetchMessages").disabled = !sessionId;
+      const charSel = $("character");
+      const scnSel = $("scenario");
 
-    setStatus("session active");
-    // 시나리오 첫 메시지를 표시(옵션)
-    if (json.scenario?.first_message) {
-      appendMsg("assistant", json.scenario.first_message);
+      charSel.innerHTML = "";
+      catalog.characters.forEach(c => {
+        const opt = document.createElement("option");
+        opt.value = c.id;
+        opt.textContent = `${c.name} (${c.id})`;
+        opt.dataset.persona = c.persona_prompt || "";
+        charSel.appendChild(opt);
+      });
+
+      scnSel.innerHTML = "";
+      catalog.scenarios.forEach(s => {
+        const opt = document.createElement("option");
+        opt.value = s.id;
+        opt.textContent = `${s.name} (${s.id})`;
+        opt.dataset.scenario = s.scenario_prompt || "";
+        opt.dataset.first = s.first_message || "";
+        scnSel.appendChild(opt);
+      });
+
+      updateDebugPrompts();
+      setPillStatus("catalog loaded");
+    }catch(e){
+      setError(e.message);
+      setPillStatus("catalog error");
+      alert(e.message);
     }
   }
 
-  function resetAll() {
-    if (abortController) abortController.abort();
-    abortController = null;
-    sessionId = null;
-    setSessionPill(null);
-    $("btnSend").disabled = true;
-    $("btnStop").disabled = true;
-    $("btnFetchMessages").disabled = true;
-    $("memorySaved").textContent = "0";
-    clearChat();
-    setStatus("reset");
+  function updateDebugPrompts(){
+    const charOpt = $("character").selectedOptions[0];
+    const scnOpt = $("scenario").selectedOptions[0];
+    $("dbgPersona").value = charOpt?.dataset.persona || "";
+    $("dbgScenario").value = scnOpt?.dataset.scenario || "";
+  }
+  $("character").addEventListener("change", updateDebugPrompts);
+  $("scenario").addEventListener("change", updateDebugPrompts);
+
+  $("btnReloadCatalog").addEventListener("click", () => loadCatalog());
+
+  // ---------- Session ----------
+  async function createSession(){
+    const user_id = $("userId").value.trim();
+    if (!user_id) return alert("user_id를 입력하세요.");
+
+    const character_id = $("character").value;
+    const scenario_id = $("scenario").value;
+
+    setPillStatus("creating session...");
+    setError("-");
+    try{
+      const res = await apiFetch("/session/create", {
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify({ user_id, character_id, scenario_id })
+      });
+      const json = await res.json();
+      currentSession = json.session;
+      setSessionPill();
+      setPillStatus("session active");
+
+      // first message
+      const scn = json.scenario;
+      if (scn?.first_message){
+        appendMsg("system", scn.first_message, `scenario: ${scn.name || scenario_id}`);
+      }
+      $("btnRetry").disabled = true;
+    }catch(e){
+      setError(e.message);
+      setPillStatus("session error");
+      alert(e.message);
+    }
+  }
+  $("btnCreateSession").addEventListener("click", () => createSession());
+
+  // ---------- Profile ----------
+  async function loadProfile(){
+    const userId = $("userId").value.trim();
+    if (!userId) return alert("user_id를 입력하세요.");
+    setPillStatus("loading profile...");
+    try{
+      const res = await apiFetch(`/admin/users/${encodeURIComponent(userId)}`);
+      const json = await res.json();
+      const u = json.user || {};
+      $("tone").value = u.tone || "";
+      $("goal").value = u.goal || "";
+      $("expertise").value = u.expertise || "";
+      $("age_band").value = u.age_band || "";
+      $("statProfile").textContent = (u && u.id) ? `loaded (${u.id})` : "not set";
+      setPillStatus("profile loaded");
+    }catch(e){
+      // user not found should still be okay
+      $("statProfile").textContent = "not set";
+      setError(e.message);
+      setPillStatus("profile error");
+      alert(e.message);
+    }
   }
 
-  // ====== SSE via fetch(stream) ======
-  async function postSSE(path, bodyObj, onEvent) {
-    abortController = new AbortController();
-    const res = await apiFetch(path, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Accept": "text/event-stream",
-      },
-      body: JSON.stringify(bodyObj),
-      signal: abortController.signal,
+  async function saveProfile(){
+    const id = $("userId").value.trim();
+    if (!id) return alert("user_id를 입력하세요.");
+    setPillStatus("saving profile...");
+    try{
+      const body = {
+        id,
+        tone: $("tone").value.trim() || null,
+        goal: $("goal").value.trim() || null,
+        expertise: $("expertise").value || null,
+        age_band: $("age_band").value || null,
+      };
+      const res = await apiFetch("/admin/users/upsert", {
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify(body)
+      });
+      await res.json();
+      $("statProfile").textContent = `saved (${id})`;
+      setPillStatus("profile saved");
+    }catch(e){
+      setError(e.message);
+      setPillStatus("profile error");
+      alert(e.message);
+    }
+  }
+  $("btnLoadProfile").addEventListener("click", () => loadProfile());
+  $("btnSaveProfile").addEventListener("click", () => saveProfile());
+
+  // ---------- Replay ----------
+  let replayCache = null;
+
+  async function fetchSessionMessages(sessionId){
+    // try public endpoint first
+    try{
+      const res = await apiFetch(`/session/${encodeURIComponent(sessionId)}/messages`);
+      const json = await res.json();
+      return json.items || json.messages || json || [];
+    }catch(e1){
+      // fallback to admin endpoint
+      const res2 = await apiFetch(`/admin/sessions/${encodeURIComponent(sessionId)}/messages?limit=400`);
+      const json2 = await res2.json();
+      return json2.items || [];
+    }
+  }
+
+  async function replayLoad(){
+    const sid = $("replaySessionId").value.trim();
+    if (!sid) return alert("replay session id를 입력하세요.");
+    setPillStatus("replay loading...");
+    try{
+      replayCache = await fetchSessionMessages(sid);
+      setPillStatus(`replay loaded (${replayCache.length})`);
+      alert(`불러옴: ${replayCache.length} messages`);
+    }catch(e){
+      setError(e.message);
+      setPillStatus("replay error");
+      alert(e.message);
+    }
+  }
+
+  function replayToChat(){
+    if (!replayCache) return alert("먼저 로그를 불러오세요.");
+    // clear and render
+    $("chatBox").innerHTML = "";
+    replayCache.forEach(m => {
+      const role = (m.role || "user").toLowerCase();
+      const content = m.content || m.text || "";
+      appendMsg(role === "assistant" ? "assistant" : role === "system" ? "system" : "user", content);
     });
+    setPillStatus("replay rendered");
+  }
 
-    const reader = res.body.getReader();
-    const decoder = new TextDecoder("utf-8");
-    let buffer = "";
+  $("btnReplay").addEventListener("click", () => replayLoad());
+  $("btnReplayToChat").addEventListener("click", () => replayToChat());
 
-    while (true) {
-      const { value, done } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
+  // ---------- Streaming (POST SSE) ----------
+  function parseSseLines(buffer){
+    // returns [events, restBuffer]
+    const events = [];
+    let rest = buffer;
 
-      // SSE는 이벤트가 "\n\n"로 구분됨
-      let parts = buffer.split("\n\n");
-      buffer = parts.pop() || "";
+    while (true){
+      const idx = rest.indexOf("\n\n");
+      if (idx === -1) break;
+      const rawEvent = rest.slice(0, idx);
+      rest = rest.slice(idx + 2);
 
-      for (const part of parts) {
-        // "data: {...}" 라인만 처리 (MVP)
-        const lines = part.split("\n").map(l => l.trim());
-        for (const line of lines) {
-          if (!line.startsWith("data:")) continue;
-          const jsonStr = line.slice(5).trim();
-          if (!jsonStr) continue;
-          try {
-            const evt = JSON.parse(jsonStr);
-            onEvent(evt);
-          } catch (e) {
-            // 파싱 실패는 무시 (MVP)
+      // collect data: lines
+      const lines = rawEvent.split("\n");
+      const dataLines = lines
+        .filter(l => l.startsWith("data:"))
+        .map(l => l.slice(5).trimStart());
+
+      if (dataLines.length){
+        const dataStr = dataLines.join("\n");
+        events.push(dataStr);
+      }
+    }
+    return [events, rest];
+  }
+
+  async function sendMessage(text){
+    if (!currentSession?.id) return alert("먼저 세션을 생성하세요.");
+    const cleaned = (text || "").trim();
+    if (!cleaned) return;
+
+    setError("-");
+    setStreaming(true);
+    setPillStatus("streaming...");
+    $("btnRetry").disabled = true;
+
+    lastUserText = cleaned;
+
+    // Render user bubble
+    appendMsg("user", cleaned, `session: ${currentSession.id}`);
+
+    // Prepare assistant bubble for incremental updates
+    let assistantAccum = "";
+    const assistantBubble = appendMsg("assistant", "", "");
+
+    // Abort controller
+    abortController = new AbortController();
+
+    try{
+      const payload = {
+        session_id: currentSession.id,
+        text: cleaned
+      };
+
+      // optional: allow overriding model at runtime if your backend supports it
+      const overrideModel = $("openaiModel").value.trim();
+      if (overrideModel) payload.model = overrideModel;
+
+      const res = await apiFetch("/chat/stream", {
+        method:"POST",
+        headers:{
+          "Content-Type":"application/json",
+          "Accept":"text/event-stream"
+        },
+        body: JSON.stringify(payload),
+        signal: abortController.signal
+      });
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder("utf-8");
+      let buffer = "";
+
+      // reset meta (but keep memory stats)
+      setProfileApplied(false);
+
+      while (true){
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream:true });
+
+        const [events, rest] = parseSseLines(buffer);
+        buffer = rest;
+
+        for (const ev of events){
+          // server sends JSON per data:
+          let obj = null;
+          try{
+            obj = JSON.parse(ev);
+          }catch{
+            // ignore malformed data
+            continue;
+          }
+
+          if (obj.type === "meta"){
+            if (obj.event === "start"){
+              setModel(obj.model || "-");
+              // show debug
+            }
+            if (obj.event === "profile_applied"){
+              setProfileApplied(true);
+              $("statProfile").textContent = "applied (server)";
+            }
+            if (obj.event === "memory_saved"){
+              // increment saved optimistically if stats not provided
+              setMemoryStats({ saved: (meta.memory_stats.saved + 1) });
+            }
+            if (obj.event === "memory_stats"){
+              setMemoryStats(obj);
+            }
+          }else if (obj.type === "delta"){
+            assistantAccum += (obj.text || "");
+            updateLastAssistantBubbleText(assistantBubble, assistantAccum);
+          }else if (obj.type === "error"){
+            setError(obj.message || "stream error");
+            // show in assistant bubble if nothing
+            if (!assistantAccum){
+              assistantAccum = "[Error] " + (obj.message || "unknown");
+              updateLastAssistantBubbleText(assistantBubble, assistantAccum);
+            }
           }
         }
       }
-    }
-  }
 
-  async function sendMessage() {
-    if (!sessionId) { alert("세션을 먼저 생성하세요."); return; }
-    const text = $("inputText").value.trim();
-    if (!text) return;
+      setPillStatus("done");
+      $("btnRetry").disabled = false;
 
-    $("inputText").value = "";
-    $("btnSend").disabled = true;
-    $("btnStop").disabled = false;
-
-    appendMsg("user", text);
-
-    setStatus("streaming...");
-    const assistantBody = appendMsg("assistant", ""); // 스트리밍으로 채워 넣기
-    let assistantFull = "";
-
-    try {
-      await postSSE("/chat/stream", { session_id: sessionId, text }, (evt) => {
-        if (evt.type === "meta" && evt.event === "start") {
-          // noop
-          return;
-        }
-        if (evt.type === "delta") {
-          assistantFull += (evt.text || "");
-          assistantBody.textContent = assistantFull;
-          $("chatlog").scrollTop = $("chatlog").scrollHeight;
-          return;
-        }
-        if (evt.type === "meta" && evt.event === "memory_saved") {
-          $("memorySaved").textContent = String(evt.count ?? 0);
-          return;
-        }
-        if (evt.type === "meta" && evt.event === "done") {
-          setStatus("done");
-          return;
-        }
-        if (evt.type === "error") {
-          setStatus("error");
-          assistantBody.textContent = `[ERROR] ${evt.message || "unknown"}`;
-          return;
-        }
-      });
-    } catch (e) {
-      setStatus("error");
-      assistantBody.textContent = `[ERROR] ${e.message}`;
-    } finally {
-      $("btnSend").disabled = false;
-      $("btnStop").disabled = true;
-      abortController = null;
-    }
-  }
-
-  function stopStreaming() {
-    if (abortController) abortController.abort();
-    abortController = null;
-    $("btnStop").disabled = true;
-    $("btnSend").disabled = false;
-    setStatus("stopped");
-  }
-
-  // ====== Logs ======
-  async function fetchMessages() {
-    if (!sessionId) return;
-    setStatus("fetching messages...");
-    const res = await apiFetch(`/session/${sessionId}/messages?limit=200`);
-    const json = await res.json();
-    setStatus("messages loaded");
-
-    // 화면에 로그를 “덮어쓰기”로 표시 (MVP)
-    clearChat();
-    (json.items || []).forEach((m) => {
-      const role = (m.role === "assistant") ? "assistant" : "user";
-      appendMsg(role, m.content);
-    });
-  }
-
-  // ====== Wire up ======
-  window.addEventListener("load", async () => {
-    $("apiBase").value = DEFAULT_API_BASE;
-    setEnvPill(DEFAULT_API_BASE);
-    setSessionPill(null);
-
-    $("btnReload").addEventListener("click", async () => {
-      try { await loadCatalog(); } catch (e) { alert(e.message); setStatus("error"); }
-    });
-    $("btnCreateSession").addEventListener("click", async () => {
-      try { await createSession(); } catch (e) { alert(e.message); setStatus("error"); }
-    });
-    $("btnSend").addEventListener("click", sendMessage);
-    $("btnStop").addEventListener("click", stopStreaming);
-    $("btnReset").addEventListener("click", resetAll);
-    $("btnFetchMessages").addEventListener("click", async () => {
-      try { await fetchMessages(); } catch (e) { alert(e.message); setStatus("error"); }
-    });
-
-    $("inputText").addEventListener("keydown", (e) => {
-      if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-        sendMessage();
+    }catch(e){
+      if (e.name === "AbortError"){
+        setPillStatus("stopped");
+      }else{
+        setError(e.message);
+        setPillStatus("stream error");
+        alert(e.message);
       }
-    });
+    }finally{
+      setStreaming(false);
+      abortController = null;
+      $("btnRetry").disabled = !lastUserText;
+    }
+  }
 
-    try { await loadCatalog(); } catch (e) { alert(e.message); setStatus("error"); }
+  $("btnSend").addEventListener("click", async () => {
+    const t = $("inputText").value;
+    $("inputText").value = "";
+    await sendMessage(t);
+  });
+
+  $("btnStop").addEventListener("click", () => {
+    if (abortController){
+      abortController.abort();
+    }
+  });
+
+  $("btnRetry").addEventListener("click", async () => {
+    if (!lastUserText) return;
+    await sendMessage(lastUserText);
+  });
+
+  $("btnClear").addEventListener("click", () => {
+    $("chatBox").innerHTML = "";
+    setPillStatus("cleared");
+  });
+
+  // Enter to send (Shift+Enter newline)
+  $("inputText").addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey){
+      e.preventDefault();
+      $("btnSend").click();
+    }
+  });
+
+  // links
+  $("linkDocs").addEventListener("click", (e) => { setApiPill(); });
+  $("linkCharacters").addEventListener("click", (e) => { setApiPill(); });
+  $("linkScenarios").addEventListener("click", (e) => { setApiPill(); });
+
+  // init
+  window.addEventListener("load", async () => {
+    setApiPill();
+    setSessionPill();
+    setModel("-");
+    setMemoryStats({ saved:0, skipped_dup:0, skipped_low:0 });
+    $("statProfile").textContent = "not loaded";
+    setError("-");
+
+    await loadCatalog();
+    // optional auto-load profile
+    // await loadProfile();
   });
 </script>
 </body>
