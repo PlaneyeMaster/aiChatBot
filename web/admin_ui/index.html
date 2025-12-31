@@ -3,33 +3,50 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Admin MVP</title>
+  <title>Admin Console MVP</title>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, "Noto Sans KR", Arial, sans-serif; margin:0; background:#0b0f14; color:#e6edf3;}
-    header { padding: 16px 20px; border-bottom: 1px solid #1f2937; display:flex; gap:10px; align-items:center;}
+    header { padding: 16px 20px; border-bottom: 1px solid #1f2937; display:flex; gap:12px; align-items:center; justify-content:space-between;}
     header h1 { margin:0; font-size:16px; }
-    .wrap { padding: 16px; display:grid; grid-template-columns: 360px 1fr; gap: 16px; }
+    .pill { display:inline-block; padding:4px 8px; border:1px solid #243244; border-radius:999px; font-size:12px; color:#9fb0c0; }
+    .wrap { padding: 16px; display:grid; grid-template-columns: 340px 1fr; gap: 16px; }
     .card { background:#0f1620; border:1px solid #1f2937; border-radius:12px; padding:14px; }
     label { display:block; font-size:12px; color:#9fb0c0; margin:10px 0 6px; }
-    input, button { width:100%; box-sizing:border-box; }
-    input { background:#0b1220; border:1px solid #243244; color:#e6edf3; border-radius:10px; padding:10px 12px; }
-    button { background:#2563eb; border:0; border-radius:10px; padding:10px 12px; color:white; font-weight:700; cursor:pointer; margin-top:10px;}
+    input, select, button, textarea { width:100%; box-sizing:border-box; }
+    input, select, textarea { background:#0b1220; border:1px solid #243244; color:#e6edf3; border-radius:10px; padding:10px 12px; outline:none; }
+    button { background:#2563eb; border:0; border-radius:10px; padding:10px 12px; color:white; font-weight:700; cursor:pointer; }
     button.secondary { background:#1f2937; }
     button.danger { background:#b91c1c; }
+    button:disabled { opacity:0.45; cursor:not-allowed; }
+    .tabs { display:flex; gap:8px; }
+    .tab { padding:8px 10px; border-radius:10px; border:1px solid #243244; background:#0b1220; cursor:pointer; font-size:12px; color:#9fb0c0; }
+    .tab.active { background:#111c2e; color:#e6edf3; border-color:#2b3e5f; }
+    .muted { color:#9fb0c0; font-size:12px; }
     table { width:100%; border-collapse:collapse; }
     th, td { border-bottom:1px solid #1f2937; padding:10px; font-size:13px; vertical-align:top; }
     th { color:#9fb0c0; font-weight:600; text-align:left; }
-    .muted { color:#9fb0c0; font-size:12px; }
     code { background:#111827; padding:2px 6px; border-radius:6px; border:1px solid #1f2937; }
+    .two { display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
+    .list { max-height: 420px; overflow:auto; border:1px solid #243244; border-radius:12px; background:#0b1220; padding:10px; }
+    .item { padding:10px; border-bottom:1px solid #1f2937; cursor:pointer; }
+    .item:hover { background:#0f1a2a; }
+    .item.active { background:#111c2e; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+    .row { display:flex; gap:10px; }
+    .row > * { flex:1; }
   </style>
 </head>
 <body>
 <header>
-  <h1>Admin MVP</h1>
-  <span class="muted" id="status">idle</span>
+  <div style="display:flex; gap:10px; align-items:center;">
+    <h1>Admin Console MVP</h1>
+    <span class="pill" id="status">idle</span>
+  </div>
+  <span class="pill" id="apiPill">API: -</span>
 </header>
 
 <div class="wrap">
+  <!-- Left: connection & navigation -->
   <div class="card">
     <h2 style="margin:0 0 10px; font-size:14px;">연결</h2>
     <label>API Base</label>
@@ -38,26 +55,116 @@
     <label>User ID</label>
     <input id="userId" value="user_001"/>
 
-    <button id="btnLoad" class="secondary">메모리 조회</button>
+    <div style="margin-top:12px;" class="tabs">
+      <div class="tab active" data-tab="users">Users</div>
+      <div class="tab" data-tab="sessions">Sessions</div>
+      <div class="tab" data-tab="memory">Memory</div>
+    </div>
+
+    <div style="margin-top:12px;">
+      <button id="btnRefresh" class="secondary">현재 탭 새로고침</button>
+    </div>
+
+    <p class="muted" style="margin-top:12px; line-height:1.5;">
+      Users: <code>GET/POST /admin/users</code><br/>
+      Sessions: <code>GET /admin/sessions</code><br/>
+      Messages: <code>GET /admin/sessions/{id}/messages</code><br/>
+      Memory: <code>GET/DELETE /admin/memory</code>
+    </p>
   </div>
 
-  <div class="card">
-    <h2 style="margin:0 0 10px; font-size:14px;">Memory Items</h2>
-    <div class="muted" style="margin-bottom:10px;">
-      조회: <code>GET /admin/memory?user_id=...</code> / 삭제: <code>DELETE /admin/memory/{id}</code>
+  <!-- Right: content -->
+  <div class="card" id="panel">
+    <!-- Users -->
+    <div id="tab-users">
+      <h2 style="margin:0 0 10px; font-size:14px;">User Profile</h2>
+
+      <div class="row">
+        <button id="btnLoadUser" class="secondary">조회</button>
+        <button id="btnSaveUser">저장(Upsert)</button>
+      </div>
+
+      <div class="two" style="margin-top:10px;">
+        <div>
+          <label>Tone</label>
+          <input id="tone" placeholder="예: 정중하고 간결"/>
+        </div>
+        <div>
+          <label>Expertise</label>
+          <select id="expertise">
+            <option value="">(미지정)</option>
+            <option value="beginner">초급</option>
+            <option value="intermediate">중급</option>
+            <option value="advanced">고급</option>
+          </select>
+        </div>
+        <div>
+          <label>Goal</label>
+          <input id="goal" placeholder="예: 업무 우선순위 정리"/>
+        </div>
+        <div>
+          <label>Age Band</label>
+          <select id="age_band">
+            <option value="">(미지정)</option>
+            <option value="10s">10대</option>
+            <option value="20s">20대</option>
+            <option value="30s">30대</option>
+            <option value="40s">40대</option>
+            <option value="50s">50대</option>
+            <option value="60s+">60대+</option>
+          </select>
+        </div>
+      </div>
+
+      <p class="muted" style="margin-top:10px;">
+        이 값들은 개인화 프롬프트 구성(톤/목표/전문성/연령)에 사용됩니다.
+      </p>
     </div>
-    <div style="overflow:auto;">
-      <table>
-        <thead>
-          <tr>
-            <th style="width:140px;">created_at</th>
-            <th>text</th>
-            <th style="width:160px;">pinecone_vector_id</th>
-            <th style="width:90px;">action</th>
-          </tr>
-        </thead>
-        <tbody id="tbody"></tbody>
-      </table>
+
+    <!-- Sessions -->
+    <div id="tab-sessions" style="display:none;">
+      <h2 style="margin:0 0 10px; font-size:14px;">Sessions</h2>
+      <div class="two">
+        <div>
+          <div class="row">
+            <button id="btnLoadSessions" class="secondary">세션 리스트 조회</button>
+          </div>
+          <div class="list" id="sessionList" style="margin-top:10px;"></div>
+        </div>
+        <div>
+          <div class="row">
+            <button id="btnLoadMessages" class="secondary" disabled>선택 세션 메시지 조회</button>
+          </div>
+          <div class="list mono" id="messageList" style="margin-top:10px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Memory -->
+    <div id="tab-memory" style="display:none;">
+      <h2 style="margin:0 0 10px; font-size:14px;">Memory Items</h2>
+
+      <div class="row">
+        <button id="btnLoadMemory" class="secondary">메모리 조회</button>
+      </div>
+
+      <div style="overflow:auto; margin-top:10px;">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:150px;">created_at</th>
+              <th>text</th>
+              <th style="width:160px;">pinecone_vector_id</th>
+              <th style="width:90px;">action</th>
+            </tr>
+          </thead>
+          <tbody id="memTbody"></tbody>
+        </table>
+      </div>
+
+      <p class="muted" style="margin-top:10px;">
+        삭제는 <b>Supabase row + Pinecone vector 동시 삭제</b>입니다.
+      </p>
     </div>
   </div>
 </div>
@@ -66,9 +173,15 @@
   const $ = (id) => document.getElementById(id);
   const setStatus = (s) => $("status").textContent = s;
 
+  let activeTab = "users";
+  let selectedSessionId = null;
+
+  function apiBase() { return $("apiBase").value.trim(); }
+  function setApiPill() { $("apiPill").textContent = "API: " + apiBase(); }
+
   async function apiFetch(path, opts={}) {
-    const base = $("apiBase").value.trim();
-    const res = await fetch(base + path, opts);
+    setApiPill();
+    const res = await fetch(apiBase() + path, opts);
     if (!res.ok) {
       const t = await res.text().catch(()=> "");
       throw new Error(`HTTP ${res.status} ${res.statusText} :: ${t}`);
@@ -76,16 +189,149 @@
     return res;
   }
 
-  function render(items) {
-    const tbody = $("tbody");
+  function escapeHtml(s) {
+    return (s||"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;");
+  }
+
+  // -------- Tabs --------
+  function showTab(name) {
+    activeTab = name;
+    document.querySelectorAll(".tab").forEach(t => t.classList.toggle("active", t.dataset.tab === name));
+    $("tab-users").style.display = (name === "users") ? "" : "none";
+    $("tab-sessions").style.display = (name === "sessions") ? "" : "none";
+    $("tab-memory").style.display = (name === "memory") ? "" : "none";
+    setStatus("tab: " + name);
+  }
+
+  document.querySelectorAll(".tab").forEach(t => {
+    t.addEventListener("click", () => showTab(t.dataset.tab));
+  });
+
+  $("btnRefresh").addEventListener("click", async () => {
+    if (activeTab === "users") return loadUser();
+    if (activeTab === "sessions") return loadSessions();
+    if (activeTab === "memory") return loadMemory();
+  });
+
+  // -------- Users --------
+  async function loadUser() {
+    const userId = $("userId").value.trim();
+    if (!userId) return alert("user_id를 입력하세요.");
+    setStatus("loading user...");
+    const res = await apiFetch(`/admin/users/${encodeURIComponent(userId)}`);
+    const json = await res.json();
+    const u = json.user || {};
+    $("tone").value = u.tone || "";
+    $("goal").value = u.goal || "";
+    $("expertise").value = u.expertise || "";
+    $("age_band").value = u.age_band || "";
+    setStatus("user loaded");
+  }
+
+  async function saveUser() {
+    const id = $("userId").value.trim();
+    if (!id) return alert("user_id를 입력하세요.");
+
+    setStatus("saving user...");
+    const body = {
+      id,
+      tone: $("tone").value.trim() || null,
+      goal: $("goal").value.trim() || null,
+      expertise: $("expertise").value || null,
+      age_band: $("age_band").value || null,
+    };
+
+    const res = await apiFetch(`/admin/users/upsert`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    await res.json();
+    setStatus("user saved");
+  }
+
+  $("btnLoadUser").addEventListener("click", () => loadUser().catch(e => { alert(e.message); setStatus("error"); }));
+  $("btnSaveUser").addEventListener("click", () => saveUser().catch(e => { alert(e.message); setStatus("error"); }));
+
+  // -------- Sessions --------
+  async function loadSessions() {
+    const userId = $("userId").value.trim();
+    if (!userId) return alert("user_id를 입력하세요.");
+    setStatus("loading sessions...");
+    const res = await apiFetch(`/admin/sessions?user_id=${encodeURIComponent(userId)}&limit=50`);
+    const json = await res.json();
+
+    const list = $("sessionList");
+    list.innerHTML = "";
+    selectedSessionId = null;
+    $("btnLoadMessages").disabled = true;
+    $("messageList").innerHTML = "";
+
+    (json.items || []).forEach((s) => {
+      const div = document.createElement("div");
+      div.className = "item";
+      div.dataset.id = s.id;
+      div.innerHTML = `
+        <div><b>${escapeHtml(s.id)}</b></div>
+        <div class="muted">created: ${escapeHtml((s.created_at||"").slice(0,19).replace("T"," "))}</div>
+        <div class="muted">char: ${escapeHtml(s.character_id||"")} / scn: ${escapeHtml(s.scenario_id||"")}</div>
+        <div class="muted">status: ${escapeHtml(s.status||"")}</div>
+      `;
+      div.addEventListener("click", () => {
+        document.querySelectorAll("#sessionList .item").forEach(x => x.classList.remove("active"));
+        div.classList.add("active");
+        selectedSessionId = s.id;
+        $("btnLoadMessages").disabled = false;
+        setStatus("selected session");
+      });
+      list.appendChild(div);
+    });
+
+    setStatus(`sessions loaded (${(json.items||[]).length})`);
+  }
+
+  async function loadMessages() {
+    if (!selectedSessionId) return alert("세션을 선택하세요.");
+    setStatus("loading messages...");
+    const res = await apiFetch(`/admin/sessions/${encodeURIComponent(selectedSessionId)}/messages?limit=400`);
+    const json = await res.json();
+
+    const box = $("messageList");
+    box.innerHTML = "";
+    (json.items || []).forEach((m) => {
+      const role = (m.role || "user").toUpperCase();
+      const t = (m.created_at || "").slice(0,19).replace("T"," ");
+      const div = document.createElement("div");
+      div.className = "item";
+      div.style.cursor = "default";
+      div.innerHTML = `<div class="muted">${t} | ${role}</div><div>${escapeHtml(m.content||"")}</div>`;
+      box.appendChild(div);
+    });
+
+    setStatus(`messages loaded (${(json.items||[]).length})`);
+  }
+
+  $("btnLoadSessions").addEventListener("click", () => loadSessions().catch(e => { alert(e.message); setStatus("error"); }));
+  $("btnLoadMessages").addEventListener("click", () => loadMessages().catch(e => { alert(e.message); setStatus("error"); }));
+
+  // -------- Memory --------
+  async function loadMemory() {
+    const userId = $("userId").value.trim();
+    if (!userId) return alert("user_id를 입력하세요.");
+    setStatus("loading memory...");
+    const res = await apiFetch(`/admin/memory?user_id=${encodeURIComponent(userId)}&limit=200`);
+    const json = await res.json();
+
+    const tbody = $("memTbody");
     tbody.innerHTML = "";
-    items.forEach((m) => {
+
+    (json.items || []).forEach((m) => {
       const tr = document.createElement("tr");
       tr.innerHTML = `
-        <td>${(m.created_at||"").slice(0,19).replace("T"," ")}</td>
+        <td>${escapeHtml((m.created_at||"").slice(0,19).replace("T"," "))}</td>
         <td>${escapeHtml(m.text || "")}</td>
         <td><span class="muted">${escapeHtml(m.pinecone_vector_id || "")}</span></td>
-        <td><button class="danger" data-id="${m.id}">삭제</button></td>
+        <td><button class="danger" data-id="${escapeHtml(m.id)}">삭제</button></td>
       `;
       tbody.appendChild(tr);
     });
@@ -96,32 +342,26 @@
         if (!confirm("Supabase + Pinecone에서 모두 삭제합니다. 진행할까요?")) return;
         try {
           setStatus("deleting...");
-          await apiFetch(`/admin/memory/${id}`, { method: "DELETE" });
+          await apiFetch(`/admin/memory/${encodeURIComponent(id)}`, { method: "DELETE" });
           setStatus("deleted");
-          await load();
+          await loadMemory();
         } catch (e) {
           alert(e.message);
           setStatus("error");
         }
       });
     });
+
+    setStatus(`memory loaded (${(json.items||[]).length})`);
   }
 
-  function escapeHtml(s) {
-    return s.replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;");
-  }
+  $("btnLoadMemory").addEventListener("click", () => loadMemory().catch(e => { alert(e.message); setStatus("error"); }));
 
-  async function load() {
-    const userId = $("userId").value.trim();
-    if (!userId) return alert("user_id를 입력하세요.");
-    setStatus("loading...");
-    const res = await apiFetch(`/admin/memory?user_id=${encodeURIComponent(userId)}&limit=200`);
-    const json = await res.json();
-    render(json.items || []);
-    setStatus(`loaded (${(json.items||[]).length})`);
-  }
-
-  $("btnLoad").addEventListener("click", () => load());
+  // -------- Init --------
+  window.addEventListener("load", () => {
+    setApiPill();
+    showTab("users");
+  });
 </script>
 </body>
 </html>

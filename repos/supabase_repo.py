@@ -63,9 +63,15 @@ def get_session_by_id(session_id: str):
     res = _supabase.table("sessions").select("*").eq("id", session_id).limit(1).execute()
     return res.data[0] if res.data else None
 
-def get_user_by_id(user_id: str):
-    res = _supabase.table("users").select("*").eq("id", user_id).limit(1).execute()
-    return res.data[0] if res.data else None
+def get_user_by_id(user_id: str) -> Optional[dict]:
+    res = (
+        _supabase.table("users")
+        .select("id,tone,goal,expertise,age_band,created_at,updated_at")
+        .eq("id", user_id)
+        .maybe_single()
+        .execute()
+    )
+    return res.data
 
 def insert_message(session_id: str, user_id: str | None, role: str, content: str):
     payload = {
@@ -81,6 +87,29 @@ def upsert_user(user_id: str, tone=None, goal=None, expertise=None, age_band=Non
     payload = {"id": user_id, "tone": tone, "goal": goal, "expertise": expertise, "age_band": age_band}
     res = _supabase.table("users").upsert(payload).execute()
     return res.data[0] if res.data else None
+
+def upsert_user_profile(
+    user_id: str,
+    tone: str | None,
+    goal: str | None,
+    expertise: str | None,
+    age_band: str | None,
+) -> dict:
+    payload = {
+        "id": user_id,
+        "tone": tone,
+        "goal": goal,
+        "expertise": expertise,
+        "age_band": age_band,
+    }
+    res = (
+        _supabase.table("users")
+        .upsert(payload, on_conflict="id")
+        .execute()
+    )
+    if isinstance(res.data, list) and res.data:
+        return res.data[0]
+    return payload
 
 def insert_memory_item(
     user_id: str,
@@ -107,6 +136,17 @@ def list_messages(session_id: str, limit: int = 200):
         .select("id,session_id,user_id,role,content,created_at")
         .eq("session_id", session_id)
         .order("created_at", desc=False)
+        .limit(limit)
+        .execute()
+    )
+    return res.data or []
+
+def list_sessions(user_id: str, limit: int = 50):
+    res = (
+        _supabase.table("sessions")
+        .select("id,user_id,character_id,scenario_id,created_at,ended_at,status")
+        .eq("user_id", user_id)
+        .order("created_at", desc=True)
         .limit(limit)
         .execute()
     )
@@ -145,12 +185,5 @@ def get_memory_item_by_id(memory_id: str) -> Optional[dict]:
     )
     return res.data
 
-def delete_memory_item_by_id(memory_id: str) -> bool:
-    _ = (
-        _supabase.table("memory_items")
-        .delete()
-        .eq("id", memory_id)
-        .execute()
-    )
-    # supabase python client는 삭제된 row 반환/영향행이 케이스마다 다름 → 성공 여부는 예외 미발생 기준으로 단순 True 처리
-    return True
+def delete_memory_item_by_id(memory_id: str) -> None:
+    _supabase.table("memory_items").delete().eq("id", memory_id).execute()
