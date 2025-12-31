@@ -1,4 +1,6 @@
 import json
+import logging
+import os
 import uuid
 from services.openai_service import client as openai_client, model_name
 from services.embeddings_service import embed_text
@@ -7,6 +9,8 @@ from repos.supabase_repo import insert_memory_item
 from repos.supabase_repo import list_recent_memory_texts
 from repos.pinecone_repo import query_memory
 from services.memory_dedupe import is_text_duplicate, is_vector_duplicate
+
+_logger = logging.getLogger(__name__)
 
 MEMORY_EXTRACT_SYSTEM = """
 너는 개인화 메모리를 추출하는 도우미다.
@@ -44,6 +48,8 @@ async def extract_memory_candidates(user_text: str, assistant_text: str) -> list
         response_format={"type": "json_object"},
     )
     raw = resp.choices[0].message.content or "{}"
+    if os.getenv("MEMORY_DEBUG") == "1":
+        _logger.info("memory_extract_raw=%s", raw)
     try:
         data = json.loads(raw)
         items = []
@@ -68,8 +74,12 @@ async def extract_memory_candidates(user_text: str, assistant_text: str) -> list
                 "importance": it.get("importance"),
                 "ttl_days": it.get("ttl_days"),
             })
+        if os.getenv("MEMORY_DEBUG") == "1":
+            _logger.info("memory_extract_cleaned=%s", cleaned)
         return cleaned
     except Exception:
+        if os.getenv("MEMORY_DEBUG") == "1":
+            _logger.exception("memory_extract_parse_error")
         return []
     
 MIN_LEN = 12
