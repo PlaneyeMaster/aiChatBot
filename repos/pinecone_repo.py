@@ -22,6 +22,9 @@ def namespace_for_user(user_id: str) -> str:
     prefix = os.getenv("PINECONE_NAMESPACE_PREFIX", "mem")
     return f"{prefix}:{user_id}"
 
+def memory_namespace(user_id: str) -> str:
+    return namespace_for_user(user_id)
+
 def upsert_memory(user_id: str, items: list[dict]):
     """
     items: [{"id": str, "values": [float], "metadata": {...}}, ...]
@@ -34,3 +37,10 @@ def query_memory(user_id: str, vector: list[float], top_k: int = 5):
     idx = _get_index()
     ns = namespace_for_user(user_id)
     return idx.query(vector=vector, top_k=top_k, include_metadata=True, namespace=ns)
+
+def delete_memory_vectors(user_id: str, vector_ids: list[str]) -> None:
+    ids = [vid for vid in vector_ids if vid]
+    if not ids:
+        return
+    idx = _get_index()
+    idx.delete(ids=ids, namespace=memory_namespace(user_id))

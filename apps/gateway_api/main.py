@@ -8,6 +8,7 @@ from apps.gateway_api.routes_seed import router as seed_router
 from apps.gateway_api.routes_session import router as session_router
 from apps.gateway_api.routes_chat import router as chat_router
 from apps.gateway_api.routes_messages import router as messages_router
+from apps.gateway_api.routes_admin import router as admin_router
 
 
 app = FastAPI(title="AI Human Gateway API")
@@ -25,6 +26,8 @@ app.include_router(seed_router)
 app.include_router(session_router)
 app.include_router(chat_router)
 app.include_router(messages_router)
+app.include_router(admin_router)
+
 
 
 

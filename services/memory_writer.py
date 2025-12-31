@@ -142,7 +142,14 @@ async def write_personal_memory(user_id: str, session_id: str, user_text: str, a
             "values": emb,
             "metadata": {"text": txt, "kind": kind, "session_id": session_id, "importance": importance},
         })
-        insert_memory_item(user_id=user_id, session_id=session_id, kind=kind, text=txt, source="chat")
+        insert_memory_item(
+            user_id=user_id,
+            session_id=session_id,
+            kind=kind,
+            text=txt,
+            source="chat",
+            pinecone_vector_id=vid,
+        )
         recent_texts.append(txt)  # 이번 턴 내 중복 방지
         saved += 1
 

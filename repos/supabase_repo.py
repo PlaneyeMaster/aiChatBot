@@ -1,6 +1,7 @@
 from supabase import create_client, Client
 from apps.gateway_api.settings import get_settings
 from datetime import datetime, timezone
+from typing import Optional
 
 
 _settings = get_settings()
@@ -81,8 +82,22 @@ def upsert_user(user_id: str, tone=None, goal=None, expertise=None, age_band=Non
     res = _supabase.table("users").upsert(payload).execute()
     return res.data[0] if res.data else None
 
-def insert_memory_item(user_id: str, session_id: str | None, kind: str | None, text: str, source: str | None = None):
-    payload = {"user_id": user_id, "session_id": session_id, "kind": kind, "text": text, "source": source}
+def insert_memory_item(
+    user_id: str,
+    session_id: str | None,
+    kind: str | None,
+    text: str,
+    source: str | None = None,
+    pinecone_vector_id: str | None = None,
+):
+    payload = {
+        "user_id": user_id,
+        "session_id": session_id,
+        "kind": kind,
+        "text": text,
+        "source": source,
+        "pinecone_vector_id": pinecone_vector_id,
+    }
     res = _supabase.table("memory_items").insert(payload).execute()
     return res.data[0] if res.data else None
 
@@ -108,3 +123,34 @@ def list_recent_memory_texts(user_id: str, limit: int = 50):
     )
     rows = res.data or []
     return [r["text"] for r in rows if r.get("text")]
+
+def list_memory_items(user_id: str, limit: int = 100):
+    res = (
+        _supabase.table("memory_items")
+        .select("id,user_id,session_id,kind,text,source,pinecone_vector_id,created_at")
+        .eq("user_id", user_id)
+        .order("created_at", desc=True)
+        .limit(limit)
+        .execute()
+    )
+    return res.data or []
+
+def get_memory_item_by_id(memory_id: str) -> Optional[dict]:
+    res = (
+        _supabase.table("memory_items")
+        .select("id,user_id,pinecone_vector_id")
+        .eq("id", memory_id)
+        .maybe_single()
+        .execute()
+    )
+    return res.data
+
+def delete_memory_item_by_id(memory_id: str) -> bool:
+    _ = (
+        _supabase.table("memory_items")
+        .delete()
+        .eq("id", memory_id)
+        .execute()
+    )
+    # supabase python client는 삭제된 row 반환/영향행이 케이스마다 다름 → 성공 여부는 예외 미발생 기준으로 단순 True 처리
+    return True
