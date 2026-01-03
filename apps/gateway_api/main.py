@@ -22,7 +22,12 @@ app.add_middleware(
     allow_origins=[
         "https://aichatbot-web.onrender.com",
         "https://aichatbot-admin.onrender.com",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
     ],
+    allow_origin_regex=r"https://.*\\.onrender\\.com",
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
