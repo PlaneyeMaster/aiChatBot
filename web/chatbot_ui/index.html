@@ -270,12 +270,10 @@
 </div>
 
 <script>
-  // 1) 로그인 가드: 최초 접속 시 로그인 페이지로 보냄
+  // 로그인 가드: 최초 접속 시 로그인 페이지로 보냄
   const userId = localStorage.getItem("user_id");
-  if (!userId) {
-    location.href = "./login.html";
-  }
-  const API_BASE = "https://aichatbot-ez4g.onrender.com";
+  if (!userId) location.href = "./login.html";
+  const API_BASE = localStorage.getItem("api_base") || "https://aichatbot-ez4g.onrender.com";
 
   const $ = (id) => document.getElementById(id);
 
@@ -295,7 +293,7 @@
 
   function setPillStatus(text){ $("pillStatus").textContent = text; }
   function setApiPill(){
-    const base = $("apiBase").value.trim();
+    const base = API_BASE;
     $("pillApi").textContent = "API: " + base;
     $("linkDocs").href = base + "/docs";
     $("linkCharacters").href = base + "/catalog/characters";
@@ -335,7 +333,7 @@
 
   async function apiFetch(path, opts={}){
     setApiPill();
-    const base = $("apiBase").value.trim();
+    const base = API_BASE;
     const headers = {
       ...(opts.headers || {}),
     };
@@ -443,8 +441,8 @@
 
   // ---------- Session ----------
   async function createSession(){
-    const user_id = $("userId").value.trim();
-    if (!user_id) return alert("user_id를 입력하세요.");
+    const user_id = localStorage.getItem("user_id");
+    if (!user_id) return alert("로그인 후 이용하세요.");
 
     const character_id = $("character").value;
     const scenario_id = $("scenario").value;
