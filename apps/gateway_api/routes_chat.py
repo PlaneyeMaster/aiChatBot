@@ -41,12 +41,18 @@ async def chat_stream(req: ChatStreamRequest):
 
     user_profile = None
     if sess.get("user_id"):
-        user_profile = get_user_by_id(sess["user_id"])
+        try:
+            user_profile = get_user_by_id(sess["user_id"])
+        except Exception:
+            _logger.exception("chat_user_profile_failed", extra={"session_id": req.session_id})
 
     # 1) 개인 메모리 검색 (user_id 없으면 스킵)
     memories = []
     if sess.get("user_id"):
-        memories = await retrieve_personal_memory(sess["user_id"], req.text, top_k=5)
+        try:
+            memories = await retrieve_personal_memory(sess["user_id"], req.text, top_k=5)
+        except Exception:
+            _logger.exception("chat_memory_retrieve_failed", extra={"session_id": req.session_id})
 
     system_prompt = build_system_prompt(
         persona_prompt=character.get("persona_prompt", ""),

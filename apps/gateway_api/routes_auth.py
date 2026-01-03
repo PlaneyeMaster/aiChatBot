@@ -32,12 +32,19 @@ async def signup(req: SignupRequest):
 
     # 가입 저장 (id를 그대로 user_id로 사용)
     pw_hash = hash_password(password)
-    ins = sb.table("users").insert({
-        "id": user_id,
-        "password_hash": pw_hash,
-        # 선택: 초기 프로필 기본값
-        # "tone": None, "goal": None, "expertise": None, "age_band": None
-    }).execute()
+    try:
+        ins = sb.table("users").insert({
+            "id": user_id,
+            "password_hash": pw_hash,
+            # 선택: 초기 프로필 기본값
+            # "tone": None, "goal": None, "expertise": None, "age_band": None
+        }).execute()
+    except Exception:
+        # 중복 삽입/DB 오류를 명확히 반환
+        raise HTTPException(status_code=409, detail="이미 존재하는 id입니다.")
+
+    if getattr(ins, "error", None):
+        raise HTTPException(status_code=409, detail="이미 존재하는 id입니다.")
 
     data = getattr(ins, "data", None) or []
     if not data:

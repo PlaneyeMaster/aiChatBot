@@ -5,3 +5,4 @@ uvicorn[standard]==0.30.6
 supabase==2.6.0
 pydantic==2.8.2
 passlib[bcrypt]==1.7.4
+bcrypt==3.2.2
