@@ -18,7 +18,7 @@ def seed_minimum_data():
             "3. 아이의 논리를 존중하며 다음 질문으로 연결하기."
         ),
         description='사고를 확장하는 질문 가이드. "왜?"로 생각의 문을 열어줘요.',
-        image_url="images/momo.png",
+        image_url="chatbot_ui/images/momo.png",
         is_active=True,
     )
     upsert_character(
@@ -33,7 +33,7 @@ def seed_minimum_data():
             "3. 가치 긍정하기 ('누군가를 위하는 마음은 세상에서 가장 반짝이는 보물이야.')."
         ),
         description="감정을 읽고 공감해주는 따뜻한 가이드. 마음을 말로 정리해줘요.",
-        image_url="images/bobo.png",
+        image_url="chatbot_ui/images/bobo.png",
         is_active=True,
     )
 

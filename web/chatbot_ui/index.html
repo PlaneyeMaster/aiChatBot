@@ -69,6 +69,10 @@
       cursor:pointer; font-size:12px; color:var(--muted); user-select:none; }
     .tab.active{ background:#111c2e; color:var(--text); border-color:#2b3e5f; }
     .hidden{ display:none !important; }
+    .charCard{ display:flex; gap:10px; align-items:center; padding:10px; border:1px solid var(--border2); border-radius:12px; background:var(--panel2); }
+    .charImg{ width:48px; height:48px; border-radius:10px; object-fit:cover; border:1px solid var(--border2); background:#0a0f18; }
+    .charMeta{ font-size:12px; color:var(--muted); line-height:1.4; }
+    .charName{ font-size:13px; color:var(--text); font-weight:700; }
 
     a{ color:#93c5fd; text-decoration:none; }
   </style>
@@ -98,6 +102,13 @@
       <div>
         <label>Scenario</label>
         <select id="scenario"></select>
+      </div>
+    </div>
+    <div class="charCard" style="margin-top:10px;">
+      <img id="characterImage" class="charImg" alt="character" />
+      <div class="charMeta">
+        <div class="charName" id="characterName">-</div>
+        <div id="characterDesc">-</div>
       </div>
     </div>
 
@@ -318,6 +329,9 @@
         opt.value = c.id;
         opt.textContent = `${c.name} (${c.id})`;
         opt.dataset.persona = c.persona_prompt || "";
+        opt.dataset.image = c.image_url || "";
+        opt.dataset.name = c.name || "";
+        opt.dataset.desc = c.description || "";
         charSel.appendChild(opt);
       });
 
@@ -345,6 +359,16 @@
     const scnOpt = $("scenario").selectedOptions[0];
     $("dbgPersona").value = charOpt?.dataset.persona || "";
     $("dbgScenario").value = scnOpt?.dataset.scenario || "";
+    const imgEl = $("characterImage");
+    const nameEl = $("characterName");
+    const descEl = $("characterDesc");
+    const imgRaw = charOpt?.dataset.image || "";
+    const imgUrl = imgRaw && !imgRaw.startsWith("http") && !imgRaw.startsWith("/")
+      ? "/" + imgRaw
+      : imgRaw;
+    if (imgEl) imgEl.src = imgUrl || "";
+    if (nameEl) nameEl.textContent = charOpt?.dataset.name || charOpt?.textContent || "-";
+    if (descEl) descEl.textContent = charOpt?.dataset.desc || "-";
   }
   $("character").addEventListener("change", updateDebugPrompts);
   $("scenario").addEventListener("change", updateDebugPrompts);
