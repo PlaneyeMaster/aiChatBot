@@ -10,8 +10,12 @@ from apps.gateway_api.routes_chat import router as chat_router
 from apps.gateway_api.routes_messages import router as messages_router
 from apps.gateway_api.routes_admin import router as admin_router
 from apps.gateway_api.routes_admin import router as admin_router
+from apps.gateway_api.routes_auth import router as auth_router
+# ...
 
 app = FastAPI(title="AI Human Gateway API")
+
+app.include_router(auth_router)
 
 app.add_middleware(
     CORSMiddleware,

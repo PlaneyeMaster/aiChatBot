@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Sign Up</title>
+  <style>
+    body{font-family:system-ui,-apple-system,"Noto Sans KR",sans-serif;background:#0b0f14;color:#e6edf3;margin:0;}
+    .wrap{max-width:420px;margin:60px auto;padding:18px;border:1px solid #1f2937;border-radius:14px;background:#0f1620;}
+    label{display:block;margin:12px 0 6px;color:#9fb0c0;font-size:12px}
+    input{width:100%;padding:10px 12px;border-radius:12px;border:1px solid #243244;background:#0b1220;color:#e6edf3;outline:none;}
+    button{width:100%;margin-top:14px;padding:10px 12px;border-radius:12px;border:0;background:#2563eb;color:white;font-weight:700;cursor:pointer}
+    .tiny{margin-top:10px;font-size:12px;color:#9fb0c0;line-height:1.6}
+    a{color:#93c5fd;text-decoration:none}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1 style="margin:0 0 6px;font-size:16px;">회원가입</h1>
+    <div class="tiny">ID는 영문만, 비밀번호는 숫자만 입력 가능합니다.</div>
+
+    <label>API Base</label>
+    <input id="apiBase" value="https://aichatbot-ez4g.onrender.com" />
+
+    <label>ID (영문만)</label>
+    <input id="userId" placeholder="예: hanjun" inputmode="text" />
+
+    <label>비밀번호 (숫자만)</label>
+    <input id="password" placeholder="예: 1234" inputmode="numeric" />
+
+    <button id="btnSignup">가입하기</button>
+
+    <div class="tiny" id="msg"></div>
+    <div class="tiny">
+      이미 계정이 있나요? <a href="./login.html">로그인</a>
+    </div>
+  </div>
+
+<script>
+  const ID_RE = /^[A-Za-z]+$/;
+  const PW_RE = /^[0-9]+$/;
+
+  const $ = (id)=>document.getElementById(id);
+  const msg = (t)=>{$("msg").textContent=t||""};
+
+  $("btnSignup").addEventListener("click", async ()=>{
+    const base = $("apiBase").value.trim();
+    const id = $("userId").value.trim();
+    const password = $("password").value.trim();
+
+    if (!ID_RE.test(id)) return msg("ID는 영문(A-Z, a-z)만 입력 가능합니다.");
+    if (!PW_RE.test(password)) return msg("비밀번호는 숫자(0-9)만 입력 가능합니다.");
+
+    msg("가입 요청 중...");
+
+    const res = await fetch(base + "/auth/signup", {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({ id, password })
+    });
+
+    const json = await res.json().catch(()=> ({}));
+    if (!res.ok){
+      return msg(json.detail || ("가입 실패: HTTP " + res.status));
+    }
+
+    msg("가입 성공. 로그인 페이지로 이동합니다.");
+    setTimeout(()=> location.href="./login.html", 700);
+  });
+</script>
+</body>
+</html>
