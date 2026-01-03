@@ -23,11 +23,20 @@ def get_characters():
 def get_scenarios():
     return _get_supabase().table("scenarios").select("*").eq("is_active", True).execute().data
 
-def upsert_character(id: str, name: str, persona_prompt: str, is_active: bool = True):
+def upsert_character(
+    id: str,
+    name: str,
+    persona_prompt: str,
+    description: str | None = None,
+    image_url: str | None = None,
+    is_active: bool = True,
+):
     return _get_supabase().table("characters").upsert({
         "id": id,
         "name": name,
         "persona_prompt": persona_prompt,
+        "description": description,
+        "image_url": image_url,
         "is_active": is_active,
     }).execute().data
 

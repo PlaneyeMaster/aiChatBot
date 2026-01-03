@@ -90,9 +90,6 @@
   <div class="card" style="overflow:auto; max-height: calc(100vh - 32px - 56px);">
     <h2 style="margin:0 0 8px; font-size:14px;">Controls</h2>
 
-    <label>Admin API Key (프로필용)</label>
-    <input id="adminKey" value="vaxportabcdefg" />
-
     <div class="two">
       <div>
         <label>Character</label>
@@ -170,20 +167,7 @@
 
   <!-- Right: chat -->
   <div class="card chatWrap">
-    <div class="statusGrid">
-      <div class="stat">
-        <div class="k">Model</div>
-        <div class="v mono" id="statModel">-</div>
-      </div>
-      <div class="stat">
-        <div class="k">Memory Stats</div>
-        <div class="v mono" id="statMemory">saved:0 dup:0 low:0</div>
-      </div>
-      <div class="stat">
-        <div class="k">Last Error</div>
-        <div class="v" id="statError">-</div>
-      </div>
-    </div>
+    <div class="statusGrid"></div>
 
     <div class="chatBox" id="chatBox"></div>
 
@@ -191,11 +175,6 @@
       <textarea id="inputText" placeholder="메시지를 입력하세요. (Shift+Enter 줄바꿈)"></textarea>
       <button id="btnSend">Send</button>
       <button id="btnStop" class="danger" disabled>Stop</button>
-    </div>
-
-    <div class="row">
-      <button id="btnRetry" class="secondary" disabled>Retry (마지막 질문 재전송)</button>
-      <button id="btnClear" class="secondary">채팅 비우기</button>
     </div>
 
     <div class="tiny">
@@ -214,7 +193,6 @@
 
   let catalog = { characters: [], scenarios: [] };
   let currentSession = null;
-  let lastUserText = "";
   let streaming = false;
   let abortController = null;
 
@@ -237,12 +215,14 @@
   }
   function setError(msg){
     meta.last_error = msg || "-";
-    $("statError").textContent = meta.last_error;
+    const statError = document.getElementById("statError");
+    if (statError) statError.textContent = meta.last_error;
     $("dbgLastError").textContent = meta.last_error;
   }
   function setModel(m){
     meta.model = m || "-";
-    $("statModel").textContent = meta.model;
+    const statModel = document.getElementById("statModel");
+    if (statModel) statModel.textContent = meta.model;
   }
   function setMemoryStats(obj){
     if (!obj) return;
@@ -250,7 +230,10 @@
     meta.memory_stats.skipped_dup = obj.skipped_dup ?? meta.memory_stats.skipped_dup;
     meta.memory_stats.skipped_low = obj.skipped_low ?? meta.memory_stats.skipped_low;
 
-    $("statMemory").textContent = `saved:${meta.memory_stats.saved} dup:${meta.memory_stats.skipped_dup} low:${meta.memory_stats.skipped_low}`;
+    const statMemory = document.getElementById("statMemory");
+    if (statMemory){
+      statMemory.textContent = `saved:${meta.memory_stats.saved} dup:${meta.memory_stats.skipped_dup} low:${meta.memory_stats.skipped_low}`;
+    }
     $("dbgMemoryStats").textContent = JSON.stringify(meta.memory_stats);
   }
   function setStreaming(v){
@@ -267,7 +250,8 @@
       ...(opts.headers || {}),
     };
     if (path.startsWith("/admin/")) {
-      headers["X-Admin-Key"] = $("adminKey").value.trim();
+      const adminKey = localStorage.getItem("admin_api_key");
+      if (adminKey) headers["X-Admin-Key"] = adminKey;
     }
     const res = await fetch(base + path, { ...opts, headers });
     if (!res.ok){
@@ -393,7 +377,6 @@
       if (scn?.first_message){
         appendMsg("system", scn.first_message, `scenario: ${scn.name || scenario_id}`);
       }
-      $("btnRetry").disabled = true;
     }catch(e){
       setError(e.message);
       setPillStatus("session error");
@@ -483,9 +466,6 @@
     setError("-");
     setStreaming(true);
     setPillStatus("streaming...");
-    $("btnRetry").disabled = true;
-
-    lastUserText = cleaned;
 
     // Render user bubble
     appendMsg("user", cleaned, `session: ${currentSession.id}`);
@@ -562,7 +542,6 @@
       }
 
       setPillStatus("done");
-      $("btnRetry").disabled = false;
 
     }catch(e){
       if (e.name === "AbortError"){
@@ -575,7 +554,6 @@
     }finally{
       setStreaming(false);
       abortController = null;
-      $("btnRetry").disabled = !lastUserText;
     }
   }
 
@@ -589,16 +567,6 @@
     if (abortController){
       abortController.abort();
     }
-  });
-
-  $("btnRetry").addEventListener("click", async () => {
-    if (!lastUserText) return;
-    await sendMessage(lastUserText);
-  });
-
-  $("btnClear").addEventListener("click", () => {
-    $("chatBox").innerHTML = "";
-    setPillStatus("cleared");
   });
 
   // Enter to send (Shift+Enter newline)
