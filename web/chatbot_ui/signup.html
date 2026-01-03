@@ -5,11 +5,12 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Sign Up</title>
   <style>
+    *, *::before, *::after{box-sizing:border-box;}
     body{font-family:system-ui,-apple-system,"Noto Sans KR",sans-serif;background:#0b0f14;color:#e6edf3;margin:0;}
     .wrap{max-width:420px;margin:60px auto;padding:18px;border:1px solid #1f2937;border-radius:14px;background:#0f1620;}
     label{display:block;margin:12px 0 6px;color:#9fb0c0;font-size:12px}
-    input{width:100%;padding:10px 12px;border-radius:12px;border:1px solid #243244;background:#0b1220;color:#e6edf3;outline:none;}
-    button{width:100%;margin-top:14px;padding:10px 12px;border-radius:12px;border:0;background:#2563eb;color:white;font-weight:700;cursor:pointer}
+    input{width:100%;max-width:100%;padding:10px 12px;border-radius:12px;border:1px solid #243244;background:#0b1220;color:#e6edf3;outline:none;}
+    button{width:100%;max-width:100%;margin-top:14px;padding:10px 12px;border-radius:12px;border:0;background:#2563eb;color:white;font-weight:700;cursor:pointer}
     .tiny{margin-top:10px;font-size:12px;color:#9fb0c0;line-height:1.6}
     a{color:#93c5fd;text-decoration:none}
   </style>
@@ -18,9 +19,6 @@
   <div class="wrap">
     <h1 style="margin:0 0 6px;font-size:16px;">회원가입</h1>
     <div class="tiny">ID는 영문만, 비밀번호는 숫자만 입력 가능합니다.</div>
-
-    <label>API Base</label>
-    <input id="apiBase" value="https://aichatbot-ez4g.onrender.com" />
 
     <label>ID (영문만)</label>
     <input id="userId" placeholder="예: hanjun" inputmode="text" />
@@ -37,6 +35,7 @@
   </div>
 
 <script>
+  const DEFAULT_API_BASE = "https://aichatbot-ez4g.onrender.com";
   const ID_RE = /^[A-Za-z]+$/;
   const PW_RE = /^[0-9]+$/;
 
@@ -48,7 +47,7 @@
   }
 
   $("btnSignup").addEventListener("click", async ()=>{
-    const base = $("apiBase").value.trim();
+    const base = localStorage.getItem("api_base") || DEFAULT_API_BASE;
     const id = $("userId").value.trim();
     const password = $("password").value.trim();
 
