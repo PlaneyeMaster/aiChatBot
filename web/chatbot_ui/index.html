@@ -332,10 +332,13 @@
     if (descEl) descEl.textContent = charOpt?.dataset.desc || "-";
     const goalEl = $("scenarioGoal");
     const outlineEl = $("scenarioOutline");
-    if (goalEl) goalEl.textContent = scnOpt?.dataset.goal || "-";
+    const goalText = scnOpt?.dataset.goal || "-";
+    if (goalEl) goalEl.textContent = goalText;
     const storyText = scnOpt?.dataset.story || "";
     const outlineText = scnOpt?.dataset.outline || "-";
     if (outlineEl) outlineEl.textContent = outlineText;
+    if (currentSession) return;
+    if (!scnOpt) return;
     if (storyText && storyText !== lastScenarioStory) {
       lastScenarioStory = storyText;
       appendMsg("system", `이야기: ${storyText}`);

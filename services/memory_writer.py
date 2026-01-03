@@ -100,7 +100,8 @@ MIN_IMPORTANCE = 4
 MAX_SAVE_PER_TURN = 5
 
 async def write_personal_memory(user_id: str, session_id: str, user_text: str, assistant_text: str):
-    history_text = f"[USER]\n{user_text}\n\n[ASSISTANT]\n{assistant_text}"
+    # 사용자 발화만을 기반으로 메모리 후보를 추출
+    history_text = f"[USER]\n{user_text}"
     cands = await extract_memory_candidates(history_text)
     if not cands:
         if os.getenv("MEMORY_DEBUG") == "1":
