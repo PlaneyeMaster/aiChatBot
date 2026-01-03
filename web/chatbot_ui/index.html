@@ -73,6 +73,9 @@
     .charImg{ width:48px; height:48px; border-radius:10px; object-fit:cover; border:1px solid var(--border2); background:#0a0f18; }
     .charMeta{ font-size:12px; color:var(--muted); line-height:1.4; }
     .charName{ font-size:13px; color:var(--text); font-weight:700; }
+    .scenarioCard{ padding:10px; border:1px solid var(--border2); border-radius:12px; background:var(--panel2); }
+    .scenarioLabel{ font-size:12px; color:var(--muted); }
+    .scenarioValue{ margin-top:4px; font-size:13px; color:var(--text); }
 
     a{ color:#93c5fd; text-decoration:none; }
   </style>
@@ -110,6 +113,12 @@
         <div class="charName" id="characterName">-</div>
         <div id="characterDesc">-</div>
       </div>
+    </div>
+    <div class="scenarioCard" style="margin-top:10px;">
+      <div class="scenarioLabel">Goal</div>
+      <div class="scenarioValue" id="scenarioGoal">-</div>
+      <div class="scenarioLabel" style="margin-top:8px;">Outline</div>
+      <div class="scenarioValue" id="scenarioOutline">-</div>
     </div>
 
     <div class="row" style="margin-top:10px;">
@@ -341,6 +350,9 @@
         opt.value = s.id;
         opt.textContent = `${s.name} (${s.id})`;
         opt.dataset.scenario = s.scenario_prompt || "";
+        opt.dataset.goal = s.goal || "";
+        opt.dataset.outline = s.outline || "";
+        opt.dataset.story = s.story || "";
         opt.dataset.first = s.first_message || "";
         scnSel.appendChild(opt);
       });
@@ -369,6 +381,10 @@
     if (imgEl) imgEl.src = imgUrl || "";
     if (nameEl) nameEl.textContent = charOpt?.dataset.name || charOpt?.textContent || "-";
     if (descEl) descEl.textContent = charOpt?.dataset.desc || "-";
+    const goalEl = $("scenarioGoal");
+    const outlineEl = $("scenarioOutline");
+    if (goalEl) goalEl.textContent = scnOpt?.dataset.goal || "-";
+    if (outlineEl) outlineEl.textContent = scnOpt?.dataset.outline || "-";
   }
   $("character").addEventListener("change", updateDebugPrompts);
   $("scenario").addEventListener("change", updateDebugPrompts);

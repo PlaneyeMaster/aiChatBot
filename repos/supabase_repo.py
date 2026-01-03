@@ -43,10 +43,22 @@ def upsert_character(
 def delete_character_by_id(character_id: str):
     return _get_supabase().table("characters").delete().eq("id", character_id).execute().data
 
-def upsert_scenario(id: str, name: str, scenario_prompt: str, first_message: str, is_active: bool = True):
+def upsert_scenario(
+    id: str,
+    name: str,
+    story: str | None,
+    goal: str | None,
+    outline: str | None,
+    scenario_prompt: str,
+    first_message: str,
+    is_active: bool = True,
+):
     return _get_supabase().table("scenarios").upsert({
         "id": id,
         "name": name,
+        "story": story,
+        "goal": goal,
+        "outline": outline,
         "scenario_prompt": scenario_prompt,
         "first_message": first_message,
         "is_active": is_active,

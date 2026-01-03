@@ -57,6 +57,9 @@ async def chat_stream(req: ChatStreamRequest):
     system_prompt = build_system_prompt(
         persona_prompt=character.get("persona_prompt", ""),
         scenario_prompt=scenario.get("scenario_prompt", ""),
+        story=scenario.get("story"),
+        outline=scenario.get("outline"),
+        goal=scenario.get("goal"),
         user_profile=user_profile,
         memories=memories,
     )
