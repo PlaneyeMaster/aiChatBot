@@ -42,6 +42,10 @@
 
   const $ = (id)=>document.getElementById(id);
   const msg = (t)=>{$("msg").textContent=t||""};
+  const userId = localStorage.getItem("user_id");
+  if (userId && document.getElementById("userId")) {
+    document.getElementById("userId").value = userId;
+  }
 
   $("btnSignup").addEventListener("click", async ()=>{
     const base = $("apiBase").value.trim();
