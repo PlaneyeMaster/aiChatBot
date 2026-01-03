@@ -165,6 +165,7 @@
   let streaming = false;
   let abortController = null;
   let lastScenarioOutline = "";
+  let lastScenarioStory = "";
 
   // meta state
   let meta = {
@@ -332,8 +333,13 @@
     const goalEl = $("scenarioGoal");
     const outlineEl = $("scenarioOutline");
     if (goalEl) goalEl.textContent = scnOpt?.dataset.goal || "-";
+    const storyText = scnOpt?.dataset.story || "";
     const outlineText = scnOpt?.dataset.outline || "-";
     if (outlineEl) outlineEl.textContent = outlineText;
+    if (storyText && storyText !== lastScenarioStory) {
+      lastScenarioStory = storyText;
+      appendMsg("system", `이야기: ${storyText}`);
+    }
     if (outlineText && outlineText !== "-" && outlineText !== lastScenarioOutline) {
       lastScenarioOutline = outlineText;
       appendMsg("system", `시나리오 개요: ${outlineText}`);
