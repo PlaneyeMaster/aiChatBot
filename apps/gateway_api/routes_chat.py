@@ -1,5 +1,6 @@
 import json
 import logging
+import time
 from typing import Dict, Any, Optional
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
@@ -30,6 +31,7 @@ def sse(data: dict) -> str:
 
 @router.post("/stream")
 async def chat_stream(req: ChatStreamRequest):
+    req_started = time.monotonic()
     sess = get_session_by_id(req.session_id)
     if not sess:
         raise HTTPException(status_code=404, detail="Session not found")
@@ -50,10 +52,16 @@ async def chat_stream(req: ChatStreamRequest):
     memories = []
     if sess.get("user_id"):
         try:
+            t0 = time.monotonic()
             memories = await retrieve_personal_memory(sess["user_id"], req.text, top_k=5)
+            _logger.info(
+                "chat_memory_retrieved",
+                extra={"session_id": req.session_id, "elapsed_ms": int((time.monotonic() - t0) * 1000), "count": len(memories)},
+            )
         except Exception:
             _logger.exception("chat_memory_retrieve_failed", extra={"session_id": req.session_id})
 
+    t0 = time.monotonic()
     system_prompt = build_system_prompt(
         persona_prompt=character.get("persona_prompt", ""),
         scenario_prompt=scenario.get("scenario_prompt", ""),
@@ -63,6 +71,10 @@ async def chat_stream(req: ChatStreamRequest):
         user_profile=user_profile,
         memories=memories,
     )
+    _logger.info(
+        "chat_prompt_built",
+        extra={"session_id": req.session_id, "elapsed_ms": int((time.monotonic() - t0) * 1000), "prompt_chars": len(system_prompt)},
+    )
 
     model = model_name()
 
@@ -71,13 +83,19 @@ async def chat_stream(req: ChatStreamRequest):
 
         # 2) 유저 메시지 저장
         try:
+            t0 = time.monotonic()
             insert_message(session_id=req.session_id, user_id=sess.get("user_id"), role="user", content=req.text)
+            _logger.info(
+                "chat_user_message_saved",
+                extra={"session_id": req.session_id, "elapsed_ms": int((time.monotonic() - t0) * 1000)},
+            )
         except Exception:
             _logger.exception("chat_insert_message_failed", extra={"session_id": req.session_id, "role": "user"})
 
         assistant_full = ""
 
         try:
+            t0 = time.monotonic()
             resp = await openai_client().chat.completions.create(
                 model=model,
                 messages=[
@@ -85,6 +103,10 @@ async def chat_stream(req: ChatStreamRequest):
                     {"role": "user", "content": req.text},
                 ],
                 stream=True,
+            )
+            _logger.info(
+                "chat_llm_stream_started",
+                extra={"session_id": req.session_id, "elapsed_ms": int((time.monotonic() - t0) * 1000), "model": model},
             )
 
             async for chunk in resp:
@@ -95,18 +117,33 @@ async def chat_stream(req: ChatStreamRequest):
 
             # 3) assistant 메시지 저장
             try:
+                t0 = time.monotonic()
                 insert_message(session_id=req.session_id, user_id=sess.get("user_id"), role="assistant", content=assistant_full)
+                _logger.info(
+                    "chat_assistant_message_saved",
+                    extra={"session_id": req.session_id, "elapsed_ms": int((time.monotonic() - t0) * 1000)},
+                )
             except Exception:
                 _logger.exception("chat_insert_message_failed", extra={"session_id": req.session_id, "role": "assistant"})
 
             # 4) 개인 메모리 추출+저장 (user_id 없으면 스킵)
             if sess.get("user_id"):
                 try:
+                    t0 = time.monotonic()
                     result = await write_personal_memory(
                         user_id=sess["user_id"],
                         session_id=req.session_id,
                         user_text=req.text,
                         assistant_text=assistant_full,
+                    )
+                    _logger.info(
+                        "chat_memory_saved",
+                        extra={
+                            "session_id": req.session_id,
+                            "elapsed_ms": int((time.monotonic() - t0) * 1000),
+                            "saved": result.get("saved", 0),
+                            "skipped_duplicate": result.get("skipped_duplicate", 0),
+                        },
                     )
                     yield sse({"type": "meta", "event": "memory_saved", "count": result.get("saved", 0)})
                     yield sse({"type": "meta", "event": "memory_skipped_duplicate", "count": result.get("skipped_duplicate", 0)})
@@ -115,6 +152,10 @@ async def chat_stream(req: ChatStreamRequest):
                     _logger.exception("chat_memory_save_failed", extra={"session_id": req.session_id})
                     yield sse({"type": "meta", "event": "memory_saved", "count": 0})
 
+            _logger.info(
+                "chat_stream_done",
+                extra={"session_id": req.session_id, "elapsed_ms": int((time.monotonic() - req_started) * 1000)},
+            )
             yield sse({"type": "meta", "event": "done"})
 
         except Exception as e:
