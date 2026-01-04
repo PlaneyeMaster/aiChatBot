@@ -40,6 +40,7 @@ def session_create(req: SessionCreateRequest):
             "id": scenario["id"],
             "name": scenario.get("name"),
             "first_message": scenario.get("first_message"),
+            "story": scenario.get("story"),
         },
     }
 

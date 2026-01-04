@@ -339,14 +339,6 @@
     if (outlineEl) outlineEl.textContent = outlineText;
     if (currentSession) return;
     if (!scnOpt) return;
-    if (storyText && storyText !== lastScenarioStory) {
-      lastScenarioStory = storyText;
-      appendMsg("system", `이야기: ${storyText}`);
-    }
-    if (outlineText && outlineText !== "-" && outlineText !== lastScenarioOutline) {
-      lastScenarioOutline = outlineText;
-      appendMsg("system", `시나리오 개요: ${outlineText}`);
-    }
   }
   $("character").addEventListener("change", updateDebugPrompts);
   $("scenario").addEventListener("change", updateDebugPrompts);
@@ -378,6 +370,9 @@
       const scn = json.scenario;
       if (scn?.first_message){
         appendMsg("system", scn.first_message, `scenario: ${scn.name || scenario_id}`);
+      }
+      if (scn?.story){
+        appendMsg("system", `이야기: ${scn.story}`, `scenario: ${scn.name || scenario_id}`);
       }
     }catch(e){
       setError(e.message);
