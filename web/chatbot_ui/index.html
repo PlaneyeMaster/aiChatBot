@@ -374,6 +374,7 @@
       if (scn?.story){
         appendMsg("system", `이야기: ${scn.story}`, `scenario: ${scn.name || scenario_id}`);
       }
+      await sendMessage("시작", { silentUser: true });
     }catch(e){
       setError(e.message);
       setPillStatus("session error");
@@ -408,7 +409,7 @@
     return [events, rest];
   }
 
-  async function sendMessage(text){
+  async function sendMessage(text, opts = {}){
     if (!currentSession?.id) return alert("먼저 세션을 생성하세요.");
     const cleaned = (text || "").trim();
     if (!cleaned) return;
@@ -417,8 +418,10 @@
     setStreaming(true);
     setPillStatus("streaming...");
 
-    // Render user bubble
-    appendMsg("user", cleaned, `session: ${currentSession.id}`);
+    // Render user bubble unless auto intro
+    if (!opts.silentUser){
+      appendMsg("user", cleaned, `session: ${currentSession.id}`);
+    }
 
     // Prepare assistant bubble for incremental updates
     let assistantAccum = "";
@@ -428,10 +431,7 @@
     abortController = new AbortController();
 
     try{
-      const payload = {
-        session_id: currentSession.id,
-        text: cleaned
-      };
+      const payload = { session_id: currentSession.id, text: cleaned };
 
       const res = await apiFetch("/chat/stream", {
         method:"POST",

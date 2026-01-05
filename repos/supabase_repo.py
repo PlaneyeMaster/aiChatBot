@@ -73,6 +73,7 @@ def create_session(user_id: str, character_id: str, scenario_id: str):
         "character_id": character_id,
         "scenario_id": scenario_id,
         "status": "active",
+        "phase": "intro",
     }
     res = _get_supabase().table("sessions").insert(payload).execute()
     return res.data[0] if res.data else None
