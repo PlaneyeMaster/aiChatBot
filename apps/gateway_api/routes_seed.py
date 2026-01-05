@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from repos.supabase_repo import upsert_character, upsert_scenario, delete_character_by_id
+from repos.supabase_repo import upsert_character, upsert_scenario, delete_character_by_id, delete_scenario_by_id
 
 router = APIRouter(prefix="/dev", tags=["dev"])
 
@@ -8,6 +8,8 @@ def seed_minimum_data():
     # 기존 기본 캐릭터 제거
     delete_character_by_id("char_a")
     delete_character_by_id("char_b")
+    delete_scenario_by_id("scn_folk_01")
+    delete_scenario_by_id("scn_folk_02")
 
     # 캐릭터 2종
     upsert_character(

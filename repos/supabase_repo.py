@@ -43,6 +43,9 @@ def upsert_character(
 def delete_character_by_id(character_id: str):
     return _get_supabase().table("characters").delete().eq("id", character_id).execute().data
 
+def delete_scenario_by_id(scenario_id: str):
+    return _get_supabase().table("scenarios").delete().eq("id", scenario_id).execute().data
+
 def upsert_scenario(
     id: str,
     name: str,
