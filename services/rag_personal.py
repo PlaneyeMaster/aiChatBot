@@ -11,6 +11,14 @@ def _simple_hash(text: str) -> str:
     return hashlib.sha256(text.strip().encode("utf-8")).hexdigest()
 
 async def retrieve_personal_memory(user_id: str, query: str | None = None, query_text: str | None = None, top_k: int = 5) -> list[str]:
+    if os.getenv("MEMORY_RETRIEVE_DISABLED") == "1":
+        return []
+    try:
+        env_top_k = int(os.getenv("MEMORY_TOP_K", "0"))
+    except ValueError:
+        env_top_k = 0
+    if env_top_k > 0:
+        top_k = min(top_k, env_top_k)
     q = (query_text or query or "").strip()
     if not q:
         return []

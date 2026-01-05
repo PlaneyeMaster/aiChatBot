@@ -157,7 +157,7 @@
   const userId = localStorage.getItem("user_id");
   if (!userId) location.href = "./login.html";
   const API_BASE = localStorage.getItem("api_base") || "https://aichatbot-ez4g.onrender.com";
-
+  
   const $ = (id) => document.getElementById(id);
 
   let catalog = { characters: [], scenarios: [] };

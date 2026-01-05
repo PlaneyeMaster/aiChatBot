@@ -1,3 +1,4 @@
+import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -11,6 +12,9 @@ from apps.gateway_api.routes_messages import router as messages_router
 from apps.gateway_api.routes_admin import router as admin_router
 from apps.gateway_api.routes_auth import router as auth_router
 # ...
+
+if not logging.getLogger().handlers:
+    logging.basicConfig(level=logging.INFO)
 
 app = FastAPI(title="AI Human Gateway API")
 
