@@ -149,10 +149,10 @@
     .good{ color:#86efac; }
     .bad{ color:#fca5a5; }
 
-    .charCard{ display:flex; gap:10px; align-items:center; padding:10px; border:1px solid var(--border2); border-radius:12px; background:var(--panel2); }
-    .charImg{ width:48px; height:48px; border-radius:10px; object-fit:cover; border:1px solid var(--border2); background:#0a0f18; }
-    .charMeta{ font-size:12px; color:var(--muted); line-height:1.4; }
-    .charName{ font-size:13px; color:var(--text); font-weight:700; }
+    .charCard{ display:flex; gap:14px; align-items:center; padding:14px; border:1px solid var(--border2); border-radius:14px; background:var(--panel2); }
+    .charImg{ width:72px; height:72px; border-radius:14px; object-fit:cover; border:1px solid var(--border2); background:#0a0f18; }
+    .charMeta{ font-size:13px; color:var(--muted); line-height:1.5; }
+    .charName{ font-size:15px; color:var(--text); font-weight:700; }
     .scenarioCard{ padding:10px; border:1px solid var(--border2); border-radius:12px; background:var(--panel2); }
     .scenarioLabel{ font-size:12px; color:var(--muted); }
     .scenarioValue{ margin-top:4px; font-size:13px; color:var(--text); }
@@ -417,7 +417,8 @@
         if (s.id === "scn_qa" || s.id === "scn_coach") return;
         const opt = document.createElement("option");
         opt.value = s.id;
-        opt.textContent = `${s.name} (${s.id})`;
+        const hideId = s.id === "scn_folk_01" || s.id === "scn_folk_02";
+        opt.textContent = hideId ? `${s.name}` : `${s.name} (${s.id})`;
         opt.dataset.scenario = s.scenario_prompt || "";
         opt.dataset.goal = s.goal || "";
         opt.dataset.outline = s.outline || "";
@@ -492,9 +493,6 @@
       const scn = json.scenario;
       if (scn?.first_message){
         appendMsg("system", scn.first_message, `scenario: ${scn.name || scenario_id}`);
-      }
-      if (scn?.story){
-        appendMsg("system", `이야기: ${scn.story}`, `scenario: ${scn.name || scenario_id}`);
       }
       await sendMessage("시작", { silentUser: true });
     }catch(e){
