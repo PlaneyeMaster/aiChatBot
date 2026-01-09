@@ -3,35 +3,108 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>AI Chatbot MVP</title>
+  <title>VAXPORT CHATBOT</title>
   <style>
     :root{
-      --bg:#0b0f14; --panel:#0f1620; --panel2:#0b1220;
-      --border:#1f2937; --border2:#243244; --text:#e6edf3; --muted:#9fb0c0;
-      --primary:#2563eb; --danger:#b91c1c; --good:#16a34a;
-      --radius:14px;
+      --bg:#0c1116; --panel:#111924; --panel2:#0c141e;
+      --border:#1f2a38; --border2:#243447; --text:#f1f5f9; --muted:#9aa6b2;
+      --primary:#f97316; --primary-2:#0ea5e9; --danger:#ef4444; --good:#22c55e;
+      --radius:16px; --shadow:0 16px 40px rgba(2,8,23,0.35);
+      --font-sans:"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",sans-serif;
+      --font-display:"Noto Serif KR","Nanum Myeongjo",serif;
     }
     *{ box-sizing:border-box; }
-    body{ margin:0; font-family:-apple-system,BlinkMacSystemFont,"Noto Sans KR",Arial,sans-serif; background:var(--bg); color:var(--text); }
-    header{ padding:14px 18px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; gap:10px;}
-    header h1{ margin:0; font-size:15px; }
-    .pill{ display:inline-flex; align-items:center; gap:8px; padding:4px 10px; border:1px solid var(--border2); border-radius:999px; font-size:12px; color:var(--muted); background:rgba(255,255,255,0.02); }
-    .mini-btn{ width:auto; padding:6px 10px; border-radius:999px; font-size:12px; }
-    .wrap{ padding:16px; display:grid; grid-template-columns: 420px 1fr; gap:16px; }
-    .card{ background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:14px; }
-    label{ display:block; font-size:12px; color:var(--muted); margin:10px 0 6px; }
+    body{
+      margin:0;
+      font-family:var(--font-sans);
+      background:
+        radial-gradient(900px 600px at 10% -10%, rgba(14,165,233,0.16), transparent 60%),
+        radial-gradient(700px 600px at 90% 10%, rgba(249,115,22,0.18), transparent 55%),
+        var(--bg);
+      color:var(--text);
+      min-height:100vh;
+    }
+    body::before,
+    body::after{
+      content:"";
+      position:fixed;
+      pointer-events:none;
+      inset:0;
+      opacity:0.5;
+    }
+    body::before{
+      background:
+        linear-gradient(120deg, rgba(15,23,42,0.5) 0%, rgba(2,6,23,0.1) 40%, rgba(2,6,23,0.6) 100%);
+      mix-blend-mode:screen;
+    }
+    body::after{
+      background-image:
+        radial-gradient(circle at 20% 20%, rgba(248,113,113,0.08), transparent 35%),
+        radial-gradient(circle at 80% 80%, rgba(34,197,94,0.08), transparent 35%);
+    }
+    header{
+      padding:16px 20px;
+      border-bottom:1px solid var(--border);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      backdrop-filter: blur(8px);
+      background:rgba(12,17,22,0.7);
+      position:sticky;
+      top:0;
+      z-index:10;
+    }
+    header h1{
+      margin:0;
+      font-size:16px;
+      font-family:var(--font-display);
+      letter-spacing:0.3px;
+    }
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:5px 12px;
+      border:1px solid var(--border2);
+      border-radius:999px;
+      font-size:12px;
+      color:var(--muted);
+      background:rgba(255,255,255,0.03);
+    }
+    .mini-btn{ width:auto; padding:7px 12px; border-radius:999px; font-size:12px; }
+    .wrap{ padding:18px; display:grid; grid-template-columns: 420px 1fr; gap:18px; }
+    .card{
+      background:linear-gradient(180deg, rgba(17,25,36,0.98), rgba(12,20,30,0.98));
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      padding:16px;
+      box-shadow:var(--shadow);
+      animation:panelIn 0.6s ease both;
+    }
+    .card:nth-of-type(2){ animation-delay:0.08s; }
+    label{ display:block; font-size:12px; color:var(--muted); margin:10px 0 6px; letter-spacing:0.2px;}
     input, select, textarea, button{ width:100%; }
     input, select, textarea{
       background:var(--panel2); border:1px solid var(--border2); border-radius:12px;
       color:var(--text); padding:10px 12px; outline:none;
+      transition:border 0.2s ease, box-shadow 0.2s ease;
+    }
+    input:focus, select:focus, textarea:focus{
+      border-color:rgba(14,165,233,0.6);
+      box-shadow:0 0 0 3px rgba(14,165,233,0.12);
     }
     textarea{ min-height:88px; resize:vertical; }
     button{
       border:0; border-radius:12px; padding:10px 12px; cursor:pointer;
-      font-weight:700; color:white; background:var(--primary);
+      font-weight:700; color:white;
+      background:linear-gradient(135deg, var(--primary), #fb923c);
+      box-shadow:0 10px 20px rgba(249,115,22,0.22);
+      transition:transform 0.15s ease, box-shadow 0.2s ease;
     }
+    button:hover{ transform:translateY(-1px); box-shadow:0 14px 26px rgba(249,115,22,0.28); }
     button.secondary{ background:#1f2937; }
-    button.danger{ background:var(--danger); }
+    button.danger{ background:linear-gradient(135deg, #ef4444, #f87171); }
     button:disabled{ opacity:0.45; cursor:not-allowed; }
     .row{ display:flex; gap:10px; }
     .row > *{ flex:1; }
@@ -41,24 +114,36 @@
     .mono{ font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
 
     /* Chat */
-    .chatWrap{ display:flex; flex-direction:column; gap:12px; height: calc(100vh - 32px - 56px); }
-    .chatBox{ flex:1; overflow:auto; padding:10px; background:var(--panel2); border:1px solid var(--border2); border-radius:var(--radius); }
-    .msg{ margin:10px 0; display:flex; gap:10px; }
+    .chatWrap{ display:flex; flex-direction:column; gap:12px; height: calc(100vh - 32px - 64px); }
+    .chatBox{
+      flex:1;
+      overflow:auto;
+      padding:12px;
+      background:linear-gradient(180deg, rgba(10,15,22,0.95), rgba(12,18,26,0.95));
+      border:1px solid var(--border2);
+      border-radius:var(--radius);
+    }
+    .msg{ margin:10px 0; display:flex; gap:10px; animation:msgIn 0.2s ease both; }
     .msg .role{ width:70px; flex:0 0 auto; font-size:12px; color:var(--muted); padding-top:4px; }
     .bubble{
       max-width: 900px;
       background:#0f1a2a; border:1px solid var(--border2); border-radius:14px;
-      padding:10px 12px; line-height:1.5;
+      padding:10px 12px; line-height:1.55;
       white-space:pre-wrap;
     }
-    .msg.user .bubble{ background:#111827; }
-    .msg.assistant .bubble{ background:#0f1a2a; }
-    .msg.system .bubble{ background:#1a1325; }
+    .msg.user .bubble{ background:#141c28; border-color:rgba(249,115,22,0.3); }
+    .msg.assistant .bubble{ background:#0f1a2a; border-color:rgba(14,165,233,0.3); }
+    .msg.system .bubble{ background:#1b1a12; border-color:rgba(34,197,94,0.3); }
     .metaLine{ font-size:12px; color:var(--muted); margin-top:6px; }
     .inputBar{ display:grid; grid-template-columns: 1fr 140px 140px; gap:10px; align-items:stretch; }
     .inputBar textarea{ min-height:52px; height:52px; resize:none; }
     .statusGrid{ display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
-    .stat{ background:rgba(255,255,255,0.02); border:1px solid var(--border2); border-radius:12px; padding:10px; }
+    .stat{
+      background:rgba(255,255,255,0.02);
+      border:1px solid var(--border2);
+      border-radius:12px;
+      padding:10px;
+    }
     .stat .k{ font-size:12px; color:var(--muted); }
     .stat .v{ font-size:13px; margin-top:6px; word-break:break-all; }
     .good{ color:#86efac; }
@@ -73,6 +158,27 @@
     .scenarioValue{ margin-top:4px; font-size:13px; color:var(--text); }
 
     a{ color:#93c5fd; text-decoration:none; }
+
+    @keyframes panelIn{
+      from{ opacity:0; transform:translateY(8px); }
+      to{ opacity:1; transform:translateY(0); }
+    }
+    @keyframes msgIn{
+      from{ opacity:0; transform:translateY(4px); }
+      to{ opacity:1; transform:translateY(0); }
+    }
+    @media (max-width: 980px){
+      .wrap{ grid-template-columns:1fr; }
+      .card{ padding:14px; }
+      .chatWrap{ height:auto; min-height:60vh; }
+      .inputBar{ grid-template-columns:1fr; }
+    }
+    @media (max-width: 600px){
+      header{ flex-direction:column; align-items:flex-start; }
+      .msg{ flex-direction:column; }
+      .msg .role{ width:auto; }
+      .statusGrid{ grid-template-columns:1fr; }
+    }
   </style>
 </head>
 <body>
@@ -82,7 +188,6 @@
     <span class="pill" id="pillStatus">idle</span>
   </div>
   <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:flex-end;">
-    <span class="pill">session: <span class="mono" id="pillSession">-</span></span>
     <button id="logoutBtn" class="secondary mini-btn">로그아웃</button>
   </div>
 </header>
@@ -125,18 +230,28 @@
 
     <div class="hr"></div>
 
-    <div class="tiny" style="line-height:1.6;">
-      Catalog:
-      <a href="#" id="linkCharacters">/catalog/characters</a> /
-      <a href="#" id="linkScenarios">/catalog/scenarios</a><br/>
-      API Docs:
-      <a href="#" id="linkDocs">/docs</a>
-    </div>
   </div>
 
   <!-- Right: chat -->
   <div class="card chatWrap">
-    <div class="statusGrid"></div>
+    <div class="statusGrid">
+      <div class="stat">
+        <div class="k">Model</div>
+        <div class="v mono" id="statModel">-</div>
+      </div>
+      <div class="stat">
+        <div class="k">Memory</div>
+        <div class="v mono" id="statMemory">saved:0 dup:0 low:0</div>
+      </div>
+      <div class="stat">
+        <div class="k">Last error</div>
+        <div class="v mono" id="statError">-</div>
+      </div>
+      <div class="stat">
+        <div class="k">Session</div>
+        <div class="v mono" id="statSession">-</div>
+      </div>
+    </div>
 
     <div class="chatBox" id="chatBox"></div>
 
@@ -177,12 +292,19 @@
   function setPillStatus(text){ $("pillStatus").textContent = text; }
   function setApiPill(){
     const base = API_BASE;
-    $("linkDocs").href = base + "/docs";
-    $("linkCharacters").href = base + "/catalog/characters";
-    $("linkScenarios").href = base + "/catalog/scenarios";
+    const linkDocs = document.getElementById("linkDocs");
+    const linkCharacters = document.getElementById("linkCharacters");
+    const linkScenarios = document.getElementById("linkScenarios");
+    if (linkDocs) linkDocs.href = base + "/docs";
+    if (linkCharacters) linkCharacters.href = base + "/catalog/characters";
+    if (linkScenarios) linkScenarios.href = base + "/catalog/scenarios";
   }
   function setSessionPill(){
-    $("pillSession").textContent = currentSession?.id || "-";
+    const sid = currentSession?.id || "-";
+    const pillSession = document.getElementById("pillSession");
+    if (pillSession) pillSession.textContent = sid;
+    const statSession = document.getElementById("statSession");
+    if (statSession) statSession.textContent = sid;
   }
   function setError(msg){
     meta.last_error = msg || "-";
@@ -528,9 +650,12 @@
   });
 
   // links
-  $("linkDocs").addEventListener("click", (e) => { setApiPill(); });
-  $("linkCharacters").addEventListener("click", (e) => { setApiPill(); });
-  $("linkScenarios").addEventListener("click", (e) => { setApiPill(); });
+  const linkDocs = document.getElementById("linkDocs");
+  const linkCharacters = document.getElementById("linkCharacters");
+  const linkScenarios = document.getElementById("linkScenarios");
+  if (linkDocs) linkDocs.addEventListener("click", () => { setApiPill(); });
+  if (linkCharacters) linkCharacters.addEventListener("click", () => { setApiPill(); });
+  if (linkScenarios) linkScenarios.addEventListener("click", () => { setApiPill(); });
   $("logoutBtn").addEventListener("click", () => {
     localStorage.removeItem("user_id");
     location.href = "./login.html";
