@@ -1,0 +1,29 @@
+body { font-family: -apple-system, BlinkMacSystemFont, "Noto Sans KR", Arial, sans-serif; margin:0; background:#0b0f14; color:#e6edf3;}
+header { padding: 16px 20px; border-bottom: 1px solid #1f2937; display:flex; gap:12px; align-items:center; justify-content:space-between;}
+header h1 { margin:0; font-size:16px; }
+.pill { display:inline-block; padding:4px 8px; border:1px solid #243244; border-radius:999px; font-size:12px; color:#9fb0c0; }
+.wrap { padding: 16px; display:grid; grid-template-columns: 340px 1fr; gap: 16px; }
+.card { background:#0f1620; border:1px solid #1f2937; border-radius:12px; padding:14px; }
+label { display:block; font-size:12px; color:#9fb0c0; margin:10px 0 6px; }
+input, select, button, textarea { width:100%; box-sizing:border-box; }
+input, select, textarea { background:#0b1220; border:1px solid #243244; color:#e6edf3; border-radius:10px; padding:10px 12px; outline:none; }
+button { background:#2563eb; border:0; border-radius:10px; padding:10px 12px; color:white; font-weight:700; cursor:pointer; }
+button.secondary { background:#1f2937; }
+button.danger { background:#b91c1c; }
+button:disabled { opacity:0.45; cursor:not-allowed; }
+.tabs { display:flex; gap:8px; }
+.tab { padding:8px 10px; border-radius:10px; border:1px solid #243244; background:#0b1220; cursor:pointer; font-size:12px; color:#9fb0c0; }
+.tab.active { background:#111c2e; color:#e6edf3; border-color:#2b3e5f; }
+.muted { color:#9fb0c0; font-size:12px; }
+table { width:100%; border-collapse:collapse; }
+th, td { border-bottom:1px solid #1f2937; padding:10px; font-size:13px; vertical-align:top; }
+th { color:#9fb0c0; font-weight:600; text-align:left; }
+code { background:#111827; padding:2px 6px; border-radius:6px; border:1px solid #1f2937; }
+.two { display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
+.list { max-height: 420px; overflow:auto; border:1px solid #243244; border-radius:12px; background:#0b1220; padding:10px; }
+.item { padding:10px; border-bottom:1px solid #1f2937; cursor:pointer; }
+.item:hover { background:#0f1a2a; }
+.item.active { background:#111c2e; }
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+.row { display:flex; gap:10px; }
+.row > * { flex:1; }
